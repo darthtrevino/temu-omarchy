@@ -224,8 +224,8 @@ hl.config({
 
 hl.config({
     misc = {
-        force_default_wallpaper = 2,     -- Use /usr/share/hypr/wall2.png
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        force_default_wallpaper = -1,
+        disable_hyprland_logo   = true, -- hyprpaper manages the desktop background
     },
 })
 
@@ -296,7 +296,7 @@ bind(mainMod .. " + SPACE", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + R", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + K", "Keybinding help", hl.dsp.exec_cmd("hypr-keybindings"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("hypr-system-menu"))
-bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("if uwsm check is-active >/dev/null 2>&1; then uwsm stop; else hyprctl dispatch 'hl.dsp.exit()'; fi"))
+bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"))
 bind(mainMod .. " + CTRL + L", "Lock system", hl.dsp.exec_cmd("pgrep -x hyprlock >/dev/null || hyprlock"))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + SHIFT + RETURN", "Browser", hl.dsp.exec_cmd(browser))

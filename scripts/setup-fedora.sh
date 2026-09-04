@@ -70,6 +70,7 @@ packages=(
     hypridle
     hyprland
     hyprlock
+    hyprpaper
     hyprpolkitagent
     jq
     kf6-kconfig
@@ -234,6 +235,7 @@ backup_target "$HOME/.config/hypr/hyprland.conf"
 link_config "$root/config/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
 link_config "$root/config/hypr/hyprlock.conf" "$HOME/.config/hypr/hyprlock.conf"
 link_config "$root/config/hypr/hypridle.conf" "$HOME/.config/hypr/hypridle.conf"
+link_config "$root/config/hypr/hyprpaper.conf" "$HOME/.config/hypr/hyprpaper.conf"
 link_config "$root/config/mako/config" "$HOME/.config/mako/config"
 copy_config "$root/config/btop/btop.conf" "$HOME/.config/btop/btop.conf"
 link_config "$root/config/btop/themes/current.theme" "$HOME/.config/btop/themes/current.theme"
@@ -307,7 +309,21 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.gnome.desktop.interface gtk-theme 'Breeze-Dark'
 fc-cache -f >/dev/null
 
-systemctl --user enable --now hypridle.service
+wallpaper_dir="$HOME/.wallpapers"
+mkdir -p "$wallpaper_dir"
+if ! find "$wallpaper_dir" -maxdepth 1 \( -type f -o -type l \) \
+    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+       -o -iname '*.bmp' -o -iname '*.webp' -o -iname '*.svg' \) \
+    -print -quit | grep -q .
+then
+    for wallpaper in /usr/share/hypr/wall{0,1,2}.png; do
+        if [[ -f "$wallpaper" ]]; then
+            ln -sfn "$wallpaper" "$wallpaper_dir/hypr-$(basename "$wallpaper")"
+        fi
+    done
+fi
+
+systemctl --user enable --now hypridle.service hyprpaper.service
 
 if hyprctl version >/dev/null 2>&1; then
     hyprctl reload >/dev/null

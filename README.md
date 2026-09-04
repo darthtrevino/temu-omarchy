@@ -6,6 +6,7 @@ Omarchy used on this machine.
 ## Included
 
 - Hyprland Lua configuration and Omarchy-style keybindings
+- Random-shuffle wallpaper rotation from `~/.wallpapers` every 15 minutes
 - Top-half dropdown workspace with terminal and cliamp
 - Automatic PipeWire recovery when the Asahi speaker sink is unavailable
 - Quickshell bar with workspaces, tray, calendar, Wi-Fi, Bluetooth, weather,
@@ -44,7 +45,8 @@ The setup script:
 6. Generates the local Quickshell config with the requested weather location.
 7. Applies dark KDE/Qt and GTK themes plus fontconfig, kitty, rofi, and
    hyprlock font defaults.
-8. Enables the `hypridle` user service and reloads the active desktop.
+8. Creates `~/.wallpapers`, seeds it with the bundled Hyprland backgrounds
+   when empty, and enables the `hyprpaper` and `hypridle` user services.
 9. Starts KDE Wallet's PAM bridge with Hyprland so the login password can
    unlock the default wallet automatically.
 

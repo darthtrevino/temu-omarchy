@@ -18,11 +18,7 @@ case "$choice" in
         systemctl suspend
         ;;
     "Log out")
-        if uwsm check is-active >/dev/null 2>&1; then
-            uwsm stop
-        else
-            hyprctl dispatch 'hl.dsp.exit()'
-        fi
+        hyprctl dispatch 'hl.dsp.exit()'
         ;;
     "Reboot")
         systemctl reboot
