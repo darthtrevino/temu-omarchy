@@ -100,6 +100,67 @@ flatpak remote-add \
     flathub \
     https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install --user -y flathub app.zen_browser.zen
+zen_profile_root="$HOME/.var/app/app.zen_browser.zen/.zen"
+zen_profiles_ini="$zen_profile_root/profiles.ini"
+if [[ ! -f "$zen_profiles_ini" ]]; then
+    zen_screenshot=$(mktemp --suffix=.png)
+    timeout 20 flatpak run app.zen_browser.zen \
+        --headless \
+        --screenshot "$zen_screenshot" \
+        about:blank >/dev/null 2>&1 || true
+    rm -f "$zen_screenshot"
+fi
+python3 - "$zen_profiles_ini" "$root/config/zen/user.js" <<'PY'
+import configparser
+import pathlib
+import re
+import sys
+
+profiles_path = pathlib.Path(sys.argv[1])
+source_path = pathlib.Path(sys.argv[2])
+if not profiles_path.is_file():
+    raise SystemExit("Zen profile initialization failed.")
+
+profiles = configparser.RawConfigParser()
+profiles.read(profiles_path)
+
+profile_path = None
+for section in profiles.sections():
+    if section.startswith("Install") and profiles.has_option(section, "Default"):
+        profile_path = profiles.get(section, "Default")
+        break
+
+if profile_path is None:
+    for section in profiles.sections():
+        if section.startswith("Profile") and profiles.getboolean(
+            section, "Default", fallback=False
+        ):
+            profile_path = profiles.get(section, "Path")
+            break
+
+if profile_path is None:
+    raise SystemExit("Unable to identify Zen's default profile.")
+
+target = profiles_path.parent / profile_path / "user.js"
+target.parent.mkdir(parents=True, exist_ok=True)
+existing = target.read_text() if target.exists() else ""
+
+for preference in source_path.read_text().splitlines():
+    match = re.match(r'user_pref\("([^"]+)",', preference)
+    if not match:
+        continue
+    pattern = re.compile(
+        rf'^user_pref\("{re.escape(match.group(1))}",.*\);$',
+        re.MULTILINE,
+    )
+    if pattern.search(existing):
+        existing = pattern.sub(preference, existing)
+    else:
+        existing += ("" if existing.endswith("\n") or not existing else "\n")
+        existing += preference + "\n"
+
+target.write_text(existing)
+PY
 zen_desktop='app.zen_browser.zen.desktop'
 xdg-settings set default-web-browser "$zen_desktop"
 for mime_type in \

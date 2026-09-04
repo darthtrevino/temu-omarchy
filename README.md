@@ -16,7 +16,7 @@ Omarchy used on this machine.
 - Screenshot workflow using grim, slurp, and wl-copy
 - JetBrainsMono Nerd Font installer and desktop font defaults
 - Breeze Dark defaults across KDE/Qt, GTK, and Flatpak applications
-- Zen Browser installed from Flathub
+- Zen Browser installed from Flathub with borderless content
 - Rofi, kitty, fontconfig, and helper scripts
 
 ## Install
