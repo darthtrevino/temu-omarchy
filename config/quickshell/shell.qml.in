@@ -702,6 +702,30 @@ ShellRoot {
                                     }
 
                                     Rectangle {
+                                        Layout.preferredWidth: 82
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: wifiManageMouse.containsMouse ? "#3a3a3a" : "transparent"
+                                        border.width: 1
+                                        border.color: root.border
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Manage"
+                                            color: root.cyan
+                                            font.pixelSize: 11
+                                        }
+
+                                        MouseArea {
+                                            id: wifiManageMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: wifiManager.running = true
+                                        }
+                                    }
+
+                                    Rectangle {
                                         Layout.preferredWidth: 64
                                         Layout.preferredHeight: 28
                                         radius: 6
@@ -742,6 +766,7 @@ ShellRoot {
                                 Flickable {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
+                                    Layout.minimumHeight: 0
                                     contentHeight: wifiColumn.implicitHeight
                                     clip: true
 
@@ -820,40 +845,6 @@ ShellRoot {
                                     }
                                 }
 
-                                RowLayout {
-                                    Layout.fillWidth: true
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: "Click a saved or open network to connect"
-                                        color: root.muted
-                                        font.pixelSize: 10
-                                    }
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 82
-                                        Layout.preferredHeight: 28
-                                        radius: 6
-                                        color: wifiManageMouse.containsMouse ? "#3a3a3a" : "transparent"
-                                        border.width: 1
-                                        border.color: root.border
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "Manage"
-                                            color: root.cyan
-                                            font.pixelSize: 11
-                                        }
-
-                                        MouseArea {
-                                            id: wifiManageMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: wifiManager.running = true
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
