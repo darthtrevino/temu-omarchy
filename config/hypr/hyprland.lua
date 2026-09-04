@@ -466,6 +466,7 @@ hl.window_rule({
 local exec_onces = {
     "/usr/libexec/pam_kwallet_init",
     "hypr-network-audio-safe --watch 15",
+    "hyprpaper",
     "qs --no-duplicate",
     "mako",
 }

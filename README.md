@@ -46,7 +46,7 @@ The setup script:
 7. Applies dark KDE/Qt and GTK themes plus fontconfig, kitty, rofi, and
    hyprlock font defaults.
 8. Creates `~/.wallpapers`, seeds it with the bundled Hyprland backgrounds
-   when empty, and enables the `hyprpaper` and `hypridle` user services.
+   when empty, starts `hyprpaper` with Hyprland, and enables `hypridle`.
 9. Starts KDE Wallet's PAM bridge with Hyprland so the login password can
    unlock the default wallet automatically.
 

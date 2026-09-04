@@ -323,10 +323,13 @@ then
     done
 fi
 
-systemctl --user enable --now hypridle.service hyprpaper.service
+systemctl --user disable --now hyprpaper.service
+systemctl --user enable --now hypridle.service
 
 if hyprctl version >/dev/null 2>&1; then
     hyprctl reload >/dev/null
+    pgrep -x hyprpaper >/dev/null \
+        || hyprctl dispatch 'hl.dsp.exec_cmd("hyprpaper")' >/dev/null
     qs kill >/dev/null 2>&1 || true
     hyprctl dispatch 'hl.dsp.exec_cmd("qs --no-duplicate")' >/dev/null || true
 fi
