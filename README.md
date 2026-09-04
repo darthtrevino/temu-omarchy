@@ -16,6 +16,7 @@ Omarchy used on this machine.
 - Themed hyprlock and battery-aware hypridle policy
 - btop activity monitor and matching theme
 - Screenshot workflow using grim, slurp, and wl-copy
+- Searchable emoji picker with direct insertion into the focused application
 - Network audio outputs start muted at 5% and are unmuted only when selected
 - JetBrainsMono Nerd Font installer and desktop font defaults
 - Breeze Dark defaults across KDE/Qt, GTK, and Flatpak applications
@@ -95,6 +96,7 @@ back to it.
 | `Super+Ctrl+X` | Toggle voice dictation |
 | `F9` | Hold for voice dictation |
 | `Super+Ctrl+T` | btop activity monitor |
+| `Super+Ctrl+E` | Search and insert an emoji |
 | `Super+L` | Toggle dwindle/scrolling layout |
 | `Super+O` | Pop and pin the active window |
 | `Super+Ctrl+F` | Toggle tiled fullscreen |

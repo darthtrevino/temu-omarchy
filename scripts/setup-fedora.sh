@@ -88,6 +88,7 @@ packages=(
     quickshell
     rofi
     slurp
+    unicode-ucd
     unzip
     upower
     vim-enhanced

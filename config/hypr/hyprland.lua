@@ -307,6 +307,7 @@ bind(mainMod .. " + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + SHIFT + N", "Editor", hl.dsp.exec_cmd(terminal .. " -e vim"))
 bind(mainMod .. " + SHIFT + ALT + M", "CLIamp", hl.dsp.exec_cmd(terminal .. " --class cliamp -e cliamp"))
 bind(mainMod .. " + CTRL + T", "Activity", hl.dsp.exec_cmd(terminal .. " --class activity --override initial_window_width=1100 --override initial_window_height=700 -e btop"))
+bind(mainMod .. " + CTRL + E", "Emoji picker", hl.dsp.exec_cmd("hypr-emoji-picker"))
 
 -- Omarchy-style window navigation and tiling
 bind(mainMod .. " + W", "Close window", hl.dsp.window.close())
