@@ -62,6 +62,7 @@ packages=(
     btop
     curl
     dolphin
+    flatpak
     fontconfig
     glib2
     grim
@@ -76,6 +77,7 @@ packages=(
     mako
     NetworkManager-tui
     NetworkManager-wifi
+    pam-kwallet
     playerctl
     python3
     quickshell
@@ -86,9 +88,25 @@ packages=(
     vim-enhanced
     wireplumber
     wl-clipboard
+    xdg-utils
 )
 
 sudo dnf install -y "${packages[@]}"
+flatpak remote-add \
+    --user \
+    --if-not-exists \
+    flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user -y flathub app.zen_browser.zen
+zen_desktop='app.zen_browser.zen.desktop'
+xdg-settings set default-web-browser "$zen_desktop"
+for mime_type in \
+    text/html \
+    x-scheme-handler/http \
+    x-scheme-handler/https
+do
+    xdg-mime default "$zen_desktop" "$mime_type"
+done
 "$root/scripts/install-nerd-font.sh"
 "$root/scripts/install-cliamp.sh"
 

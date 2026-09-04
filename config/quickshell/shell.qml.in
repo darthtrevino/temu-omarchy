@@ -14,6 +14,7 @@ ShellRoot {
     property string volumeText: "VOL --"
     property int volumePercent: 0
     property bool volumeMuted: false
+    property int pendingVolumePercent: -1
     property string batteryText: "BAT --"
     property string mediaText: ""
     property var wifiNetworks: []
@@ -26,6 +27,19 @@ ShellRoot {
     property string weatherText: "--°"
     property var weatherData: ({})
     property string weatherUpdated: ""
+    property string fastingText: "Fast --"
+    property int fastingLevel: -1
+    property string fastingException: ""
+    property var fastingAbstentions: []
+    property string orthocalDateKey: ""
+    property string orthocalDateLabel: ""
+    property string orthocalSummary: ""
+    property var orthocalTitles: []
+    property var orthocalFeasts: []
+    property var orthocalSaints: []
+    property var orthocalReadings: []
+    property var orthocalServiceNotes: []
+    property string orthocalError: ""
     property int batteryPercent: 0
     property bool batteryCharging: false
 
@@ -36,6 +50,13 @@ ShellRoot {
     readonly property color cyan: "#33ccff"
     readonly property color green: "#00ff99"
     readonly property color border: "#555555"
+
+    function setVolume(percent) {
+        const clamped = Math.max(0, Math.min(100, Math.round(percent)))
+        volumePercent = clamped
+        pendingVolumePercent = clamped
+        volumeApply.restart()
+    }
 
     function splitNmcliRow(row) {
         const fields = []
@@ -210,6 +231,80 @@ ShellRoot {
                     }
 
                     Rectangle {
+                        id: fastingButton
+
+                        Layout.preferredWidth: Math.min(
+                            190,
+                            fastingContents.implicitWidth + 12
+                        )
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: fastingMouse.containsMouse || orthocalPopup.visible
+                            ? root.surface
+                            : "transparent"
+
+                        Row {
+                            id: fastingContents
+
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\u2626"
+                                color: root.fastingLevel === 0
+                                    ? root.green
+                                    : root.fastingLevel > 0
+                                        ? "#ffcc66"
+                                        : root.muted
+                                font.pixelSize: 15
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(160, implicitWidth)
+                                text: root.fastingText
+                                color: root.foreground
+                                elide: Text.ElideRight
+                                font.pixelSize: 11
+                            }
+                        }
+
+                        MouseArea {
+                            id: fastingMouse
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                const point = fastingButton.mapToItem(
+                                    bar.contentItem,
+                                    0,
+                                    0
+                                )
+                                orthocalPopup.anchor.rect.x = Math.max(
+                                    10,
+                                    Math.min(
+                                        bar.width - orthocalPopup.implicitWidth - 10,
+                                        point.x + fastingButton.width / 2
+                                            - orthocalPopup.implicitWidth / 2
+                                    )
+                                )
+                                orthocalPopup.visible = !orthocalPopup.visible
+
+                                const today = Qt.formatDateTime(
+                                    new Date(),
+                                    "yyyy-MM-dd"
+                                )
+                                if (orthocalPopup.visible
+                                        && root.orthocalDateKey !== today
+                                        && !orthocalStatus.running)
+                                    orthocalStatus.running = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
                         id: networkButton
 
                         Layout.preferredWidth: 30
@@ -334,17 +429,42 @@ ShellRoot {
                     }
 
                     Rectangle {
+                        id: volumeButton
+
                         Layout.preferredWidth: 30
                         Layout.preferredHeight: 26
                         radius: 6
-                        color: volumeMouse.containsMouse ? root.surface : "transparent"
+                        color: volumeMouse.containsMouse || volumePopup.visible
+                            ? root.surface
+                            : "transparent"
 
                         MouseArea {
                             id: volumeMouse
                             anchors.fill: parent
                             hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: volumeToggle.running = true
+                            onClicked: mouse => {
+                                if (mouse.button === Qt.LeftButton) {
+                                    const point = volumeButton.mapToItem(
+                                        bar.contentItem,
+                                        volumeButton.width,
+                                        0
+                                    )
+                                    volumePopup.anchor.rect.x = Math.max(
+                                        10,
+                                        Math.min(
+                                            bar.width - volumePopup.implicitWidth - 10,
+                                            point.x - volumePopup.implicitWidth
+                                        )
+                                    )
+                                    volumePopup.visible = !volumePopup.visible
+                                    if (volumePopup.visible && !volumeStatus.running)
+                                        volumeStatus.running = true
+                                } else {
+                                    volumeToggle.running = true
+                                }
+                            }
                             onWheel: wheel => {
                                 volumeAdjust.command = [
                                     "wpctl",
@@ -459,6 +579,366 @@ ShellRoot {
                                     1
                                 )
                                 calendarPopup.visible = !calendarPopup.visible
+                            }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
+                id: volumePopup
+
+                anchor.window: bar
+                anchor.rect.x: bar.width - implicitWidth - 10
+                anchor.rect.y: bar.height + 6
+                implicitWidth: 260
+                implicitHeight: 100
+                color: "transparent"
+                grabFocus: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: root.surface
+                    border.width: 1
+                    border.color: root.border
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 10
+
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Rectangle {
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
+                                radius: 6
+                                color: volumeMuteMouse.containsMouse
+                                    ? "#3a3a3a"
+                                    : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.volumeMuted ? "\uf026" : "\uf028"
+                                    color: root.volumeMuted ? "#ff6677" : root.foreground
+                                    font.family: "Font Awesome 6 Free"
+                                    font.styleName: "Solid"
+                                    font.pixelSize: 15
+                                }
+
+                                MouseArea {
+                                    id: volumeMuteMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: volumeToggle.running = true
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.volumeMuted ? "Volume muted" : "Volume"
+                                color: root.green
+                                font.bold: true
+                                font.pixelSize: 15
+                            }
+
+                            Text {
+                                text: root.volumePercent + "%"
+                                color: root.cyan
+                                font.bold: true
+                                font.pixelSize: 12
+                            }
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 20
+
+                            Rectangle {
+                                id: volumeTrack
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 6
+                                radius: 3
+                                color: "#444444"
+
+                                Rectangle {
+                                    width: parent.width * root.volumePercent / 100
+                                    height: parent.height
+                                    radius: parent.radius
+                                    color: root.volumeMuted ? root.muted : root.green
+                                }
+
+                                Rectangle {
+                                    x: (parent.width - width) * root.volumePercent / 100
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: volumeSliderMouse.containsMouse
+                                        || volumeSliderMouse.pressed
+                                        ? root.cyan
+                                        : root.foreground
+                                }
+                            }
+
+                            MouseArea {
+                                id: volumeSliderMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+
+                                function updateVolume(mouseX) {
+                                    root.setVolume(
+                                        (mouseX - volumeTrack.x) * 100 / volumeTrack.width
+                                    )
+                                }
+
+                                onPressed: mouse => updateVolume(mouse.x)
+                                onPositionChanged: mouse => {
+                                    if (pressed)
+                                        updateVolume(mouse.x)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
+                id: orthocalPopup
+
+                anchor.window: bar
+                anchor.rect.x: bar.width - implicitWidth - 10
+                anchor.rect.y: bar.height + 6
+                implicitWidth: 460
+                implicitHeight: 520
+                color: "transparent"
+                grabFocus: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: root.surface
+                    border.width: 1
+                    border.color: root.border
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 10
+
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Orthodox Today"
+                                color: root.green
+                                font.bold: true
+                                font.pixelSize: 15
+                            }
+
+                            Text {
+                                text: root.orthocalDateLabel
+                                color: root.muted
+                                font.pixelSize: 10
+                            }
+                        }
+
+                        Flickable {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.minimumHeight: 0
+                            contentHeight: orthocalContent.implicitHeight
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+
+                            Column {
+                                id: orthocalContent
+
+                                width: parent.width
+                                spacing: 8
+
+                                Text {
+                                    visible: root.orthocalError !== ""
+                                    width: parent.width
+                                    text: root.orthocalError
+                                    color: "#ff6677"
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Text {
+                                    visible: root.orthocalSummary !== ""
+                                    width: parent.width
+                                    text: root.orthocalSummary
+                                    color: root.foreground
+                                    font.bold: true
+                                    font.pixelSize: 14
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Text {
+                                    visible: root.orthocalTitles.length > 0
+                                    width: parent.width
+                                    text: root.orthocalTitles.join("\n")
+                                    color: root.muted
+                                    font.pixelSize: 11
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: 1
+                                    color: root.border
+                                }
+
+                                Text {
+                                    text: "Fasting rule"
+                                    color: root.cyan
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                Text {
+                                    width: parent.width
+                                    text: root.fastingText
+                                    color: root.fastingLevel === 0
+                                        ? root.green
+                                        : "#ffcc66"
+                                    font.bold: true
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Text {
+                                    visible: root.fastingAbstentions.length > 0
+                                    width: parent.width
+                                    text: "Abstain from: "
+                                        + root.fastingAbstentions.join(", ")
+                                    color: root.muted
+                                    font.pixelSize: 11
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Text {
+                                    visible: root.orthocalFeasts.length > 0
+                                    text: "Feasts"
+                                    color: root.cyan
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                Repeater {
+                                    model: root.orthocalFeasts
+
+                                    Text {
+                                        required property var modelData
+
+                                        width: orthocalContent.width
+                                        text: "\u2022 " + modelData
+                                        color: root.foreground
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Text {
+                                    visible: root.orthocalSaints.length > 0
+                                    text: "Saints and commemorations"
+                                    color: root.cyan
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                Repeater {
+                                    model: root.orthocalSaints
+
+                                    Text {
+                                        required property var modelData
+
+                                        width: orthocalContent.width
+                                        text: "\u2022 " + modelData
+                                        color: root.foreground
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Text {
+                                    visible: root.orthocalReadings.length > 0
+                                    text: "Readings"
+                                    color: root.cyan
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                Repeater {
+                                    model: root.orthocalReadings
+
+                                    Text {
+                                        required property var modelData
+
+                                        width: orthocalContent.width
+                                        text: modelData.source + ": "
+                                            + modelData.display
+                                        color: root.foreground
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Text {
+                                    visible: root.orthocalServiceNotes.length > 0
+                                    text: "Service notes"
+                                    color: root.cyan
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                }
+
+                                Repeater {
+                                    model: root.orthocalServiceNotes
+
+                                    Text {
+                                        required property var modelData
+
+                                        width: orthocalContent.width
+                                        text: "\u2022 " + modelData
+                                        color: root.foreground
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 32
+                            radius: 6
+                            color: orthocalLinkMouse.containsMouse
+                                ? "#3a3a3a"
+                                : "transparent"
+                            border.width: 1
+                            border.color: root.border
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Open orthocal.info"
+                                color: root.cyan
+                                font.pixelSize: 11
+                            }
+
+                            MouseArea {
+                                id: orthocalLinkMouse
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: orthocalOpen.running = true
                             }
                         }
                     }
@@ -1402,6 +1882,66 @@ ShellRoot {
     }
 
     Process {
+        id: orthocalStatus
+        command: [
+            "bash",
+            "-lc",
+            "today=$(date +%Y/%-m/%-d); "
+                + "curl -fsSL --max-time 15 "
+                + "\"https://orthocal.info/api/slavic/gregorian/$today/\" | "
+                + "jq -c '{year, month, day, titles, summary_title, feasts, "
+                + "fast_level, fast_level_desc, fast_exception_desc, "
+                + "fast_abstentions, saints, service_notes, "
+                + "readings: [(.readings // [])[] | "
+                + "{source, display, description}]}'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const payload = text.trim()
+                if (payload === "" || payload[0] !== "{") {
+                    root.orthocalError = "Unable to load today's calendar."
+                    return
+                }
+
+                let data
+                try {
+                    data = JSON.parse(payload)
+                } catch (error) {
+                    root.orthocalError = "Unable to read today's calendar."
+                    return
+                }
+
+                const month = data.month < 10 ? "0" + data.month : data.month
+                const day = data.day < 10 ? "0" + data.day : data.day
+                root.orthocalDateKey = data.year + "-" + month + "-" + day
+                root.orthocalDateLabel = Qt.formatDate(
+                    new Date(data.year, data.month - 1, data.day),
+                    "dddd, MMMM d, yyyy"
+                )
+                root.orthocalSummary = data.summary_title || ""
+                root.orthocalTitles = data.titles || []
+                root.orthocalFeasts = data.feasts || []
+                root.orthocalSaints = data.saints || []
+                root.orthocalReadings = data.readings || []
+                root.orthocalServiceNotes = data.service_notes || []
+                root.fastingLevel = data.fast_level
+                root.fastingException = data.fast_exception_desc || ""
+                root.fastingAbstentions = data.fast_abstentions || []
+                const description = data.fast_level_desc || "Fasting unavailable"
+                root.fastingText = root.fastingException !== ""
+                    ? description + " - " + root.fastingException
+                    : description
+                root.orthocalError = ""
+            }
+        }
+    }
+
+    Process {
+        id: orthocalOpen
+        command: ["xdg-open", "https://orthocal.info/"]
+    }
+
+    Process {
         id: volumeStatus
         command: [
             "bash",
@@ -1479,6 +2019,34 @@ ShellRoot {
         onExited: volumeStatus.running = true
     }
 
+    Timer {
+        id: volumeApply
+        interval: 75
+        repeat: false
+
+        onTriggered: {
+            if (volumeAdjust.running) {
+                restart()
+                return
+            }
+
+            if (root.pendingVolumePercent < 0)
+                return
+
+            const percent = root.pendingVolumePercent
+            root.pendingVolumePercent = -1
+            volumeAdjust.command = [
+                "wpctl",
+                "set-volume",
+                "-l",
+                "1",
+                "@DEFAULT_AUDIO_SINK@",
+                percent + "%"
+            ]
+            volumeAdjust.running = true
+        }
+    }
+
     Process {
         id: mediaToggle
         command: ["playerctl", "play-pause"]
@@ -1524,11 +2092,24 @@ ShellRoot {
         }
     }
 
+    Timer {
+        interval: 60000
+        running: true
+        repeat: true
+
+        onTriggered: {
+            const today = Qt.formatDateTime(new Date(), "yyyy-MM-dd")
+            if (root.orthocalDateKey !== today && !orthocalStatus.running)
+                orthocalStatus.running = true
+        }
+    }
+
     Component.onCompleted: {
         networkStatus.running = true
         wifiScan.running = true
         bluetoothStatus.running = true
         weatherStatus.running = true
+        orthocalStatus.running = true
         volumeStatus.running = true
         batteryStatus.running = true
         mediaStatus.running = true

@@ -38,6 +38,7 @@ hl.monitor({
 local terminal    = "kitty"
 local fileManager = "dolphin"
 local menu        = "rofi -show drun"
+local browser     = "flatpak run app.zen_browser.zen"
 
 
 -------------------
@@ -295,7 +296,7 @@ bind(mainMod .. " + K", "Keybinding help", hl.dsp.exec_cmd("hypr-keybindings"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("hypr-system-menu"))
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("if uwsm check is-active >/dev/null 2>&1; then uwsm stop; else hyprctl dispatch 'hl.dsp.exit()'; fi"))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
-bind(mainMod .. " + SHIFT + RETURN", "Browser", hl.dsp.exec_cmd("firefox"))
+bind(mainMod .. " + SHIFT + RETURN", "Browser", hl.dsp.exec_cmd(browser))
 bind(mainMod .. " + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + SHIFT + N", "Editor", hl.dsp.exec_cmd(terminal .. " -e vim"))
 bind(mainMod .. " + SHIFT + ALT + M", "CLIamp", hl.dsp.exec_cmd(terminal .. " --class cliamp -e cliamp"))
@@ -437,6 +438,7 @@ hl.window_rule({
 })
 
 local exec_onces = {
+    "/usr/libexec/pam_kwallet_init",
     "qs --no-duplicate",
     "mako",
 }

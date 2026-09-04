@@ -8,11 +8,13 @@ Omarchy used on this machine.
 - Hyprland Lua configuration and Omarchy-style keybindings
 - Top-half dropdown workspace with terminal and cliamp
 - Quickshell bar with workspaces, tray, calendar, Wi-Fi, Bluetooth, weather,
-  volume, battery, and media controls
+  Orthodox fasting guidance and daily details, volume, battery, and media
+  controls
 - Themed hyprlock and battery-aware hypridle policy
 - btop activity monitor and matching theme
 - Screenshot workflow using grim, slurp, and wl-copy
 - JetBrainsMono Nerd Font installer and desktop font defaults
+- Zen Browser installed from Flathub
 - Rofi, kitty, fontconfig, and helper scripts
 
 ## Install
@@ -29,14 +31,18 @@ Use your own ZIP or airport code. The location is inserted only into
 The setup script:
 
 1. Installs Fedora packages through `sudo dnf`.
-2. Downloads JetBrainsMono Nerd Font v3.5.1 and cliamp v2.0.1 from their
+2. Adds Flathub for the current user, installs Zen Browser, and makes it the
+   default web browser.
+3. Downloads JetBrainsMono Nerd Font v3.5.1 and cliamp v2.0.1 from their
    official releases and verifies pinned SHA-256 checksums.
-3. Backs up replaced or mutated configuration files under
+4. Backs up replaced or mutated configuration files under
    `~/.local/state/temu-omarchy/backups/<timestamp>`.
-4. Symlinks static configurations and helper scripts from this repository.
-5. Generates the local Quickshell config with the requested weather location.
-6. Applies KDE, GTK, fontconfig, kitty, rofi, and hyprlock font defaults.
-7. Enables the `hypridle` user service and reloads the active desktop.
+5. Symlinks static configurations and helper scripts from this repository.
+6. Generates the local Quickshell config with the requested weather location.
+7. Applies KDE, GTK, fontconfig, kitty, rofi, and hyprlock font defaults.
+8. Enables the `hypridle` user service and reloads the active desktop.
+9. Starts KDE Wallet's PAM bridge with Hyprland so the login password can
+   unlock the default wallet automatically.
 
 Keep the repository at a stable path because most installed files are symlinks
 back to it.
@@ -63,6 +69,11 @@ back to it.
   logout/login refreshes every toolkit.
 - **Lock screen:** test manual locking from `Super+Escape` before relying on
   automatic idle locking.
+- **KDE Wallet:** set the `kdewallet` password to the same password used at
+  login. Open `kwalletmanager5`, select `kdewallet`, and use **Change
+  Password**. After the next logout/login, applications such as Copilot can
+  read their saved credentials without a separate wallet prompt. Passwordless
+  or automatic login cannot provide a password to unlock an encrypted wallet.
 
 ## Key shortcuts
 
@@ -70,6 +81,7 @@ back to it.
 |---|---|
 | `Super+Space` | Application launcher |
 | `Super+Enter` | Terminal |
+| `Super+Shift+Enter` | Zen Browser |
 | `Super+\`` | Toggle dropdown workspace |
 | `Super+Shift+\`` | Move focused window to dropdown |
 | `Super+Ctrl+T` | btop activity monitor |
