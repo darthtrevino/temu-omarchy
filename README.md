@@ -7,6 +7,7 @@ Omarchy used on this machine.
 
 - Hyprland Lua configuration and Omarchy-style keybindings
 - Top-half dropdown workspace with terminal and cliamp
+- Automatic PipeWire recovery when the Asahi speaker sink is unavailable
 - Quickshell bar with workspaces, tray, calendar, Wi-Fi, Bluetooth, weather,
   Orthodox fasting guidance and daily details, volume, battery, and media
   controls
@@ -14,6 +15,7 @@ Omarchy used on this machine.
 - btop activity monitor and matching theme
 - Screenshot workflow using grim, slurp, and wl-copy
 - JetBrainsMono Nerd Font installer and desktop font defaults
+- Breeze Dark defaults across KDE/Qt, GTK, and Flatpak applications
 - Zen Browser installed from Flathub
 - Rofi, kitty, fontconfig, and helper scripts
 
@@ -39,7 +41,8 @@ The setup script:
    `~/.local/state/temu-omarchy/backups/<timestamp>`.
 5. Symlinks static configurations and helper scripts from this repository.
 6. Generates the local Quickshell config with the requested weather location.
-7. Applies KDE, GTK, fontconfig, kitty, rofi, and hyprlock font defaults.
+7. Applies dark KDE/Qt and GTK themes plus fontconfig, kitty, rofi, and
+   hyprlock font defaults.
 8. Enables the `hypridle` user service and reloads the active desktop.
 9. Starts KDE Wallet's PAM bridge with Hyprland so the login password can
    unlock the default wallet automatically.

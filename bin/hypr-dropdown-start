@@ -1,6 +1,62 @@
 #!/usr/bin/env bash
 
-kitty --class cliamp -e cliamp &
+cliamp_socket="$HOME/.config/cliamp/cliamp.sock"
+cliamp_pid_file="$HOME/.config/cliamp/cliamp.sock.pid"
+
+find_asahi_sink() {
+    wpctl status -n 2>/dev/null |
+        awk '/audio_effect\.j416-convolver/ && /\[Audio\/Sink\]/ {
+            for (i = 1; i <= NF; ++i) {
+                if ($i ~ /^[0-9]+\.$/) {
+                    sub(/\.$/, "", $i)
+                    print $i
+                    exit
+                }
+            }
+        }'
+}
+
+ensure_audio_ready() {
+    if [[ -n "$(find_asahi_sink)" ]]; then
+        return 0
+    fi
+
+    systemctl --user restart \
+        pipewire.service \
+        pipewire-pulse.service \
+        wireplumber.service || return 1
+
+    local sink_id
+    for _ in {1..40}; do
+        sleep 0.25
+        sink_id=$(find_asahi_sink)
+        if [[ -n "$sink_id" ]]; then
+            wpctl set-default "$sink_id"
+            return
+        fi
+    done
+
+    return 1
+}
+
+if [[ -f "$cliamp_pid_file" ]]; then
+    read -r cliamp_pid <"$cliamp_pid_file"
+    if [[ ! "$cliamp_pid" =~ ^[0-9]+$ ]] || ! kill -0 "$cliamp_pid" 2>/dev/null; then
+        rm -f "$cliamp_socket" "$cliamp_pid_file"
+    fi
+fi
+
+if ensure_audio_ready; then
+    kitty \
+        --class cliamp \
+        --override font_size=8.0 \
+        -e cliamp --start-theme tokyo-night &
+else
+    notify-send \
+        --urgency=critical \
+        "CLIamp audio unavailable" \
+        "PipeWire did not restore the Asahi speaker sink."
+fi
 
 for _ in {1..20}; do
     sleep 0.05

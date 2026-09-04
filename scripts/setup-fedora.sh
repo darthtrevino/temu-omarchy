@@ -58,6 +58,7 @@ fi
 
 packages=(
     bluez
+    breeze-icon-theme
     brightnessctl
     btop
     curl
@@ -78,6 +79,7 @@ packages=(
     NetworkManager-tui
     NetworkManager-wifi
     pam-kwallet
+    plasma-breeze
     playerctl
     python3
     quickshell
@@ -221,13 +223,25 @@ for key in font fixed menuFont toolBarFont activeFont; do
 done
 kwriteconfig6 --file kdeglobals --group General \
     --key smallestReadableFont "$small_font_value"
+plasma-apply-colorscheme BreezeDark
+kwriteconfig6 --file kdeglobals --group General --key ColorScheme BreezeDark
 kwriteconfig6 --file "$HOME/.config/gtk-3.0/settings.ini" \
     --group Settings --key gtk-font-name 'JetBrainsMono Nerd Font, 10'
+kwriteconfig6 --file "$HOME/.config/gtk-3.0/settings.ini" \
+    --group Settings --key gtk-theme-name Breeze-Dark
+kwriteconfig6 --file "$HOME/.config/gtk-3.0/settings.ini" \
+    --group Settings --key gtk-application-prefer-dark-theme true
 kwriteconfig6 --file "$HOME/.config/gtk-4.0/settings.ini" \
     --group Settings --key gtk-font-name 'JetBrainsMono Nerd Font, 10'
+kwriteconfig6 --file "$HOME/.config/gtk-4.0/settings.ini" \
+    --group Settings --key gtk-theme-name Breeze-Dark
+kwriteconfig6 --file "$HOME/.config/gtk-4.0/settings.ini" \
+    --group Settings --key gtk-application-prefer-dark-theme true
 gsettings set org.gnome.desktop.interface font-name 'JetBrainsMono Nerd Font 10'
 gsettings set org.gnome.desktop.interface monospace-font-name \
     'JetBrainsMono Nerd Font 10'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+gsettings set org.gnome.desktop.interface gtk-theme 'Breeze-Dark'
 fc-cache -f >/dev/null
 
 systemctl --user enable --now hypridle.service

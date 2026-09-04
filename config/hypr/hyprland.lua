@@ -67,6 +67,8 @@ hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
+hl.env("GTK_THEME", "Breeze-Dark")
+hl.env("QT_QPA_PLATFORMTHEME", "kde")
 
 
 -----------------------
@@ -444,7 +446,7 @@ local exec_onces = {
 }
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP GTK_THEME QT_QPA_PLATFORMTHEME")
     hl.exec_cmd("/usr/libexec/hyprpolkitagent")
 
     for _, cmd in ipairs(exec_onces) do
