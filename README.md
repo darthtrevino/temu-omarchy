@@ -14,6 +14,7 @@ Omarchy used on this machine.
 - Themed hyprlock and battery-aware hypridle policy
 - btop activity monitor and matching theme
 - Screenshot workflow using grim, slurp, and wl-copy
+- Network audio outputs start muted at 5% and are unmuted only when selected
 - JetBrainsMono Nerd Font installer and desktop font defaults
 - Breeze Dark defaults across KDE/Qt, GTK, and Flatpak applications
 - Zen Browser installed from Flathub with borderless content

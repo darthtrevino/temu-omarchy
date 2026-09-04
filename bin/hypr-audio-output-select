@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+if ! hypr-asahi-audio-ensure; then
+    exit 1
+fi
+
 if ! sinks=$(timeout 3 pactl -f json list sinks 2>/dev/null); then
     notify-send -u critical "Audio output selection failed" \
         "PipeWire did not return the available outputs."
@@ -47,6 +51,13 @@ if [[ -z "$sink_name" ]]; then
     exit 1
 fi
 
+network_sink=false
+if [[ "$sink_name" == raop_sink.* ]]; then
+    network_sink=true
+    timeout 3 pactl set-sink-volume "$sink_name" 5%
+    timeout 3 pactl set-sink-mute "$sink_name" 1
+fi
+
 if [[ "$sink_name" != "$current_sink" ]]; then
     timeout 3 pactl set-default-sink "$sink_name"
 
@@ -54,6 +65,11 @@ if [[ "$sink_name" != "$current_sink" ]]; then
         [[ -n "$input" ]] || continue
         timeout 3 pactl move-sink-input "$input" "$sink_name"
     done < <(timeout 3 pactl -f json list sink-inputs 2>/dev/null | jq -r '.[].index')
+
+fi
+
+if [[ "$network_sink" == "true" ]]; then
+    timeout 3 pactl set-sink-mute "$sink_name" 0
 fi
 
 notify-send -u low "Audio output" "$sink_label"
