@@ -244,15 +244,28 @@ hl.config({
         sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
 
         touchpad = {
-            natural_scroll = false,
+            natural_scroll = true,
+            tap_to_click = true,
+            tap_and_drag = true,
+            drag_lock = 1,
+            clickfinger_behavior = true,
+            disable_while_typing = true,
+            middle_button_emulation = false,
+            scroll_factor = 1.0,
         },
     },
 })
 
 hl.gesture({
-    fingers = 3,
+    fingers = 4,
     direction = "horizontal",
     action = "workspace"
+})
+
+hl.gesture({
+    fingers = 3,
+    direction = "swipe",
+    action = "move"
 })
 
 -- Example per-device config
