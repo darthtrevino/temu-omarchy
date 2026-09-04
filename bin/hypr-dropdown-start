@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+kitty --class cliamp -e cliamp &
+
+for _ in {1..20}; do
+    sleep 0.05
+    if hyprctl clients -j | jq -e \
+        '.[] | select(.class == "cliamp"
+                      and .workspace.name == "special:scratchpad")' \
+        >/dev/null; then
+        break
+    fi
+done
+
+exec kitty --class dropdown-terminal

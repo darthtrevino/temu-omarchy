@@ -1,0 +1,1545 @@
+import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
+import Quickshell.Services.SystemTray
+import Quickshell.Widgets
+import QtQuick
+import QtQuick.Layouts
+
+ShellRoot {
+    id: root
+
+    property bool barVisible: true
+    property string networkText: "NET --"
+    property string volumeText: "VOL --"
+    property int volumePercent: 0
+    property bool volumeMuted: false
+    property string batteryText: "BAT --"
+    property string mediaText: ""
+    property var wifiNetworks: []
+    property bool wifiEnabled: true
+    property int wifiSignal: 0
+    property string wifiMessage: ""
+    property var bluetoothDevices: []
+    property bool bluetoothPowered: false
+    property string bluetoothMessage: ""
+    property string weatherText: "--°"
+    property var weatherData: ({})
+    property string weatherUpdated: ""
+    property int batteryPercent: 0
+    property bool batteryCharging: false
+
+    readonly property color background: "#ee1a1a1a"
+    readonly property color surface: "#f52a2a2a"
+    readonly property color foreground: "#dddddd"
+    readonly property color muted: "#888888"
+    readonly property color cyan: "#33ccff"
+    readonly property color green: "#00ff99"
+    readonly property color border: "#555555"
+
+    function splitNmcliRow(row) {
+        const fields = []
+        let field = ""
+        let escaped = false
+
+        for (let i = 0; i < row.length; ++i) {
+            const character = row[i]
+            if (escaped) {
+                field += character
+                escaped = false
+            } else if (character === "\\") {
+                escaped = true
+            } else if (character === ":") {
+                fields.push(field)
+                field = ""
+            } else {
+                field += character
+            }
+        }
+
+        if (escaped)
+            field += "\\"
+        fields.push(field)
+        return fields
+    }
+
+    IpcHandler {
+        target: "bar"
+
+        function toggle(): void {
+            root.barVisible = !root.barVisible
+        }
+    }
+
+    SystemClock {
+        id: clock
+        precision: SystemClock.Minutes
+    }
+
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: bar
+
+            required property var modelData
+
+            screen: modelData
+            visible: root.barVisible
+            implicitHeight: 34
+            color: root.background
+
+            anchors {
+                top: true
+                left: true
+                right: true
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                RowLayout {
+                    spacing: 4
+
+                    Repeater {
+                        model: Hyprland.workspaces
+
+                        Rectangle {
+                            id: workspaceButton
+
+                            required property var modelData
+
+                            visible: modelData.id > 0
+                            Layout.preferredWidth: visible ? 24 : 0
+                            Layout.preferredHeight: 24
+                            radius: 5
+                            color: modelData.focused
+                                ? root.green
+                                : modelData.urgent
+                                    ? "#ff6677"
+                                    : modelData.active
+                                        ? "#335544"
+                                        : "transparent"
+                            border.width: modelData.focused ? 0 : 1
+                            border.color: root.border
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: workspaceButton.modelData.name
+                                color: workspaceButton.modelData.focused
+                                    ? "#102018"
+                                    : root.foreground
+                                font.bold: true
+                                font.pixelSize: 12
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: workspaceButton.modelData.activate()
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 620
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.mediaText !== ""
+                        ? root.mediaText
+                        : Hyprland.activeToplevel
+                            ? Hyprland.activeToplevel.title
+                            : ""
+                    color: root.foreground
+                    elide: Text.ElideRight
+                    font.pixelSize: 12
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.mediaText !== ""
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: mediaToggle.running = true
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                RowLayout {
+                    spacing: 10
+
+                    Repeater {
+                        model: SystemTray.items
+
+                        Item {
+                            id: trayItem
+
+                            required property var modelData
+
+                            Layout.preferredWidth: 20
+                            Layout.preferredHeight: 24
+
+                            IconImage {
+                                anchors.centerIn: parent
+                                implicitSize: 17
+                                source: trayItem.modelData.icon
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: mouse => {
+                                    if (mouse.button === Qt.MiddleButton) {
+                                        trayItem.modelData.secondaryActivate()
+                                    } else if (mouse.button === Qt.RightButton || trayItem.modelData.onlyMenu) {
+                                        const point = trayItem.mapToItem(bar.contentItem, 0, trayItem.height)
+                                        trayItem.modelData.display(bar, point.x, point.y)
+                                    } else {
+                                        trayItem.modelData.activate()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: networkButton
+
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: networkMouse.containsMouse || wifiPopup.visible
+                            ? root.surface
+                            : "transparent"
+
+                        Row {
+                            anchors.centerIn: parent
+                            height: 16
+                            spacing: 2
+
+                            Repeater {
+                                model: [5, 8, 11, 14]
+
+                                Rectangle {
+                                    required property int index
+                                    required property int modelData
+
+                                    anchors.bottom: parent.bottom
+                                    width: 3
+                                    height: modelData
+                                    radius: 1
+                                    color: root.wifiEnabled
+                                        && root.networkText !== "NET offline"
+                                        && root.wifiSignal >= (index + 1) * 20
+                                        ? root.green
+                                        : "#555555"
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: networkMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                wifiPopup.visible = !wifiPopup.visible
+                                if (wifiPopup.visible && !wifiScan.running)
+                                    wifiScan.running = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: bluetoothButton
+
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: bluetoothMouse.containsMouse || bluetoothPopup.visible
+                            ? root.surface
+                            : "transparent"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf293"
+                            color: root.bluetoothPowered ? root.cyan : "#555555"
+                            font.family: "Font Awesome 6 Brands"
+                            font.pixelSize: 16
+                        }
+
+                        MouseArea {
+                            id: bluetoothMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                bluetoothPopup.visible = !bluetoothPopup.visible
+                                if (bluetoothPopup.visible && !bluetoothStatus.running)
+                                    bluetoothStatus.running = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: weatherButton
+
+                        Layout.preferredWidth: weatherContents.implicitWidth + 12
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: weatherMouse.containsMouse || weatherPopup.visible
+                            ? root.surface
+                            : "transparent"
+
+                        Row {
+                            id: weatherContents
+                            anchors.centerIn: parent
+                            spacing: 4
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\uf0c2"
+                                color: root.foreground
+                                font.family: "Font Awesome 6 Free"
+                                font.styleName: "Solid"
+                                font.pixelSize: 15
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.weatherText
+                                color: root.cyan
+                                font.pixelSize: 12
+                            }
+                        }
+
+                        MouseArea {
+                            id: weatherMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                weatherPopup.visible = !weatherPopup.visible
+                                if (weatherPopup.visible && !weatherStatus.running)
+                                    weatherStatus.running = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: volumeMouse.containsMouse ? root.surface : "transparent"
+
+                        MouseArea {
+                            id: volumeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: volumeToggle.running = true
+                            onWheel: wheel => {
+                                volumeAdjust.command = [
+                                    "wpctl",
+                                    "set-volume",
+                                    "-l",
+                                    "1",
+                                    "@DEFAULT_AUDIO_SINK@",
+                                    wheel.angleDelta.y > 0 ? "5%+" : "5%-"
+                                ]
+                                volumeAdjust.running = true
+                            }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.volumeMuted
+                                ? "\uf026"
+                                : root.volumePercent < 35
+                                    ? "\uf027"
+                                    : "\uf028"
+                            color: root.volumeMuted ? "#ff6677" : root.foreground
+                            font.family: "Font Awesome 6 Free"
+                            font.styleName: "Solid"
+                            font.pixelSize: 15
+                        }
+                    }
+
+                    Item {
+                        visible: root.batteryText !== ""
+                        Layout.preferredWidth: 31
+                        Layout.preferredHeight: 24
+
+                        Rectangle {
+                            id: batteryBody
+
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 25
+                            height: 13
+                            radius: 3
+                            color: "transparent"
+                            border.width: 1
+                            border.color: root.foreground
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.max(
+                                    2,
+                                    (batteryBody.width - 4) * root.batteryPercent / 100
+                                )
+                                height: batteryBody.height - 4
+                                radius: 1
+                                color: root.batteryPercent <= 20
+                                    ? "#ffcc66"
+                                    : root.green
+                            }
+
+                            Text {
+                                visible: root.batteryCharging
+                                anchors.centerIn: parent
+                                text: "+"
+                                color: "#102018"
+                                font.bold: true
+                                font.pixelSize: 10
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.left: batteryBody.right
+                            anchors.leftMargin: 1
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 3
+                            height: 7
+                            radius: 1
+                            color: root.foreground
+                        }
+                    }
+
+                    Rectangle {
+                        id: clockButton
+
+                        Layout.preferredWidth: clockLabel.implicitWidth + 16
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: clockMouse.containsMouse || calendarPopup.visible
+                            ? root.surface
+                            : "transparent"
+
+                        Text {
+                            id: clockLabel
+
+                            anchors.centerIn: parent
+                            text: Qt.formatDateTime(clock.date, "ddd MMM d  HH:mm")
+                            color: root.cyan
+                            font.bold: true
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            id: clockMouse
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: {
+                                calendarPopup.shownMonth = new Date(
+                                    clock.date.getFullYear(),
+                                    clock.date.getMonth(),
+                                    1
+                                )
+                                calendarPopup.visible = !calendarPopup.visible
+                            }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
+                id: calendarPopup
+
+                property date shownMonth: new Date(
+                    clock.date.getFullYear(),
+                    clock.date.getMonth(),
+                    1
+                )
+
+                function dateForCell(cellIndex) {
+                    const firstDay = new Date(
+                        shownMonth.getFullYear(),
+                        shownMonth.getMonth(),
+                        1
+                    ).getDay()
+                    return new Date(
+                        shownMonth.getFullYear(),
+                        shownMonth.getMonth(),
+                        cellIndex - firstDay + 1
+                    )
+                }
+
+                function changeMonth(offset) {
+                    shownMonth = new Date(
+                        shownMonth.getFullYear(),
+                        shownMonth.getMonth() + offset,
+                        1
+                    )
+                }
+
+                anchor.window: bar
+                anchor.rect.x: bar.width - implicitWidth - 10
+                anchor.rect.y: bar.height + 6
+                implicitWidth: 322
+                implicitHeight: 330
+                color: "transparent"
+                grabFocus: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: root.surface
+                    border.width: 1
+                    border.color: root.border
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Rectangle {
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
+                                radius: 5
+                                color: previousMonth.containsMouse ? "#3a3a3a" : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "<"
+                                    color: root.foreground
+                                    font.bold: true
+                                }
+
+                                MouseArea {
+                                    id: previousMonth
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: calendarPopup.changeMonth(-1)
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignHCenter
+                                text: Qt.formatDateTime(calendarPopup.shownMonth, "MMMM yyyy")
+                                color: root.green
+                                font.bold: true
+                                font.pixelSize: 15
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
+                                radius: 5
+                                color: nextMonth.containsMouse ? "#3a3a3a" : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: ">"
+                                    color: root.foreground
+                                    font.bold: true
+                                }
+
+                                MouseArea {
+                                    id: nextMonth
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: calendarPopup.changeMonth(1)
+                                }
+                            }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 7
+                            columnSpacing: 4
+
+                            Repeater {
+                                model: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+                                Text {
+                                    required property string modelData
+
+                                    Layout.preferredWidth: 38
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData
+                                    color: root.muted
+                                    font.bold: true
+                                    font.pixelSize: 11
+                                }
+                            }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            columns: 7
+                            columnSpacing: 4
+                            rowSpacing: 4
+
+                            Repeater {
+                                model: 42
+
+                                Rectangle {
+                                    id: dayCell
+
+                                    required property int index
+                                    property date cellDate: calendarPopup.dateForCell(index)
+                                    property bool currentMonth:
+                                        cellDate.getMonth() === calendarPopup.shownMonth.getMonth()
+                                    property bool today:
+                                        cellDate.getFullYear() === clock.date.getFullYear()
+                                        && cellDate.getMonth() === clock.date.getMonth()
+                                        && cellDate.getDate() === clock.date.getDate()
+
+                                    Layout.preferredWidth: 38
+                                    Layout.preferredHeight: 34
+                                    radius: 6
+                                    color: today ? root.green : "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: dayCell.cellDate.getDate()
+                                        color: dayCell.today
+                                            ? "#102018"
+                                            : dayCell.currentMonth
+                                                ? root.foreground
+                                                : "#666666"
+                                        font.bold: dayCell.today
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: 72
+                            Layout.preferredHeight: 26
+                            radius: 5
+                            color: todayMouse.containsMouse ? "#3a3a3a" : "transparent"
+                            border.width: 1
+                            border.color: root.border
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Today"
+                                color: root.cyan
+                                font.pixelSize: 11
+                            }
+
+                            MouseArea {
+                                id: todayMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: calendarPopup.shownMonth = new Date(
+                                    clock.date.getFullYear(),
+                                    clock.date.getMonth(),
+                                    1
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            PopupWindow {
+                id: wifiPopup
+
+                        anchor.window: bar
+                        anchor.rect.x: Math.max(10, bar.width - implicitWidth - 350)
+                        anchor.rect.y: bar.height + 6
+                        implicitWidth: 360
+                        implicitHeight: 430
+                        color: "transparent"
+                        grabFocus: true
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 10
+                            color: root.surface
+                            border.width: 1
+                            border.color: root.border
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 10
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Wi-Fi networks"
+                                        color: root.green
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 64
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: root.wifiEnabled ? "#335544" : "#444444"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.wifiEnabled ? "On" : "Off"
+                                            color: root.foreground
+                                            font.bold: true
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                wifiRadio.command = [
+                                                    "nmcli",
+                                                    "radio",
+                                                    "wifi",
+                                                    root.wifiEnabled ? "off" : "on"
+                                                ]
+                                                wifiRadio.running = true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    visible: root.wifiMessage !== ""
+                                    Layout.fillWidth: true
+                                    text: root.wifiMessage
+                                    color: root.muted
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 11
+                                }
+
+                                Flickable {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    contentHeight: wifiColumn.implicitHeight
+                                    clip: true
+
+                                    Column {
+                                        id: wifiColumn
+                                        width: parent.width
+                                        spacing: 4
+
+                                        Repeater {
+                                            model: root.wifiNetworks
+
+                                            Rectangle {
+                                                id: wifiRow
+
+                                                required property var modelData
+
+                                                width: wifiColumn.width
+                                                height: 44
+                                                radius: 6
+                                                color: wifiRowMouse.containsMouse
+                                                    ? "#3a3a3a"
+                                                    : modelData.active
+                                                        ? "#284438"
+                                                        : "transparent"
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: 10
+                                                    anchors.rightMargin: 10
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: wifiRow.modelData.ssid
+                                                        color: wifiRow.modelData.active
+                                                            ? root.green
+                                                            : root.foreground
+                                                        elide: Text.ElideRight
+                                                        font.bold: wifiRow.modelData.active
+                                                    }
+
+                                                    Text {
+                                                        text: wifiRow.modelData.signal + "%"
+                                                        color: root.muted
+                                                        font.pixelSize: 11
+                                                    }
+
+                                                    Text {
+                                                        text: wifiRow.modelData.security === "--"
+                                                            ? "open"
+                                                            : "secured"
+                                                        color: root.muted
+                                                        font.pixelSize: 10
+                                                    }
+                                                }
+
+                                                MouseArea {
+                                                    id: wifiRowMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    enabled: !wifiRow.modelData.active
+                                                    onClicked: {
+                                                        root.wifiMessage = "Connecting to "
+                                                            + wifiRow.modelData.ssid + "..."
+                                                        wifiConnect.command = [
+                                                            "nmcli",
+                                                            "device",
+                                                            "wifi",
+                                                            "connect",
+                                                            wifiRow.modelData.ssid
+                                                        ]
+                                                        wifiConnect.running = true
+                                                    }
+                                                }
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Click a saved or open network to connect"
+                                        color: root.muted
+                                        font.pixelSize: 10
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 82
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: wifiManageMouse.containsMouse ? "#3a3a3a" : "transparent"
+                                        border.width: 1
+                                        border.color: root.border
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Manage"
+                                            color: root.cyan
+                                            font.pixelSize: 11
+                                        }
+
+                                        MouseArea {
+                                            id: wifiManageMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: wifiManager.running = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                    PopupWindow {
+                        id: bluetoothPopup
+
+                        anchor.window: bar
+                        anchor.rect.x: Math.max(10, bar.width - implicitWidth - 240)
+                        anchor.rect.y: bar.height + 6
+                        implicitWidth: 340
+                        implicitHeight: 360
+                        color: "transparent"
+                        grabFocus: true
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 10
+                            color: root.surface
+                            border.width: 1
+                            border.color: root.border
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 14
+                                spacing: 10
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Bluetooth"
+                                        color: root.green
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 64
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: root.bluetoothPowered ? "#335544" : "#444444"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.bluetoothPowered ? "On" : "Off"
+                                            color: root.foreground
+                                            font.bold: true
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                bluetoothPower.command = [
+                                                    "bluetoothctl",
+                                                    "power",
+                                                    root.bluetoothPowered ? "off" : "on"
+                                                ]
+                                                bluetoothPower.running = true
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    visible: root.bluetoothMessage !== ""
+                                    Layout.fillWidth: true
+                                    text: root.bluetoothMessage
+                                    color: root.muted
+                                    elide: Text.ElideRight
+                                    font.pixelSize: 11
+                                }
+
+                                Flickable {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    contentHeight: bluetoothColumn.implicitHeight
+                                    clip: true
+
+                                    Column {
+                                        id: bluetoothColumn
+                                        width: parent.width
+                                        spacing: 4
+
+                                        Text {
+                                            visible: root.bluetoothDevices.length === 0
+                                            width: parent.width
+                                            height: 42
+                                            verticalAlignment: Text.AlignVCenter
+                                            text: root.bluetoothPowered
+                                                ? "No paired devices"
+                                                : "Bluetooth is powered off"
+                                            color: root.muted
+                                        }
+
+                                        Repeater {
+                                            model: root.bluetoothDevices
+
+                                            Rectangle {
+                                                id: bluetoothRow
+
+                                                required property var modelData
+
+                                                width: bluetoothColumn.width
+                                                height: 44
+                                                radius: 6
+                                                color: bluetoothRowMouse.containsMouse
+                                                    ? "#3a3a3a"
+                                                    : modelData.connected
+                                                        ? "#284438"
+                                                        : "transparent"
+
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.leftMargin: 10
+                                                    anchors.rightMargin: 10
+
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        text: bluetoothRow.modelData.name
+                                                        color: bluetoothRow.modelData.connected
+                                                            ? root.green
+                                                            : root.foreground
+                                                        elide: Text.ElideRight
+                                                        font.bold: bluetoothRow.modelData.connected
+                                                    }
+
+                                                    Text {
+                                                        text: bluetoothRow.modelData.connected
+                                                            ? "connected"
+                                                            : "paired"
+                                                        color: root.muted
+                                                        font.pixelSize: 10
+                                                    }
+                                                }
+
+                                                MouseArea {
+                                                    id: bluetoothRowMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
+                                                        const action = bluetoothRow.modelData.connected
+                                                            ? "disconnect"
+                                                            : "connect"
+                                                        root.bluetoothMessage = action + "ing "
+                                                            + bluetoothRow.modelData.name + "..."
+                                                        bluetoothConnect.command = [
+                                                            "bluetoothctl",
+                                                            action,
+                                                            bluetoothRow.modelData.mac
+                                                        ]
+                                                        bluetoothConnect.running = true
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 82
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: bluetoothScanMouse.containsMouse ? "#3a3a3a" : "transparent"
+                                        border.width: 1
+                                        border.color: root.border
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Scan"
+                                            color: root.cyan
+                                            font.pixelSize: 11
+                                        }
+
+                                        MouseArea {
+                                            id: bluetoothScanMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: bluetoothScan.running = true
+                                        }
+                                    }
+
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 82
+                                        Layout.preferredHeight: 28
+                                        radius: 6
+                                        color: bluetoothManageMouse.containsMouse ? "#3a3a3a" : "transparent"
+                                        border.width: 1
+                                        border.color: root.border
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Manage"
+                                            color: root.cyan
+                                            font.pixelSize: 11
+                                        }
+
+                                        MouseArea {
+                                            id: bluetoothManageMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: bluetoothManager.running = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    PopupWindow {
+                        id: weatherPopup
+
+                        anchor.window: bar
+                        anchor.rect.x: bar.width - implicitWidth - 115
+                        anchor.rect.y: bar.height + 6
+                        implicitWidth: 310
+                        implicitHeight: 285
+                        color: "transparent"
+                        grabFocus: true
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 10
+                            color: root.surface
+                            border.width: 1
+                            border.color: root.border
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 16
+                                spacing: 10
+
+                                Text {
+                                    text: "Weather - __WEATHER_LABEL__"
+                                    color: root.green
+                                    font.bold: true
+                                    font.pixelSize: 15
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: root.weatherData.description || "Weather unavailable"
+                                    color: root.foreground
+                                    font.pixelSize: 18
+                                    font.bold: true
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                Text {
+                                    text: root.weatherData.temperature
+                                        ? root.weatherData.temperature + " F"
+                                            + "  (feels " + root.weatherData.feelsLike + " F)"
+                                        : ""
+                                    color: root.cyan
+                                    font.pixelSize: 24
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    text: root.weatherData.humidity
+                                        ? "Humidity " + root.weatherData.humidity
+                                            + "%   Wind " + root.weatherData.wind + " mph"
+                                        : ""
+                                    color: root.muted
+                                    font.pixelSize: 11
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 1
+                                    color: root.border
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+
+                                        Text {
+                                            text: "Today"
+                                            color: root.foreground
+                                            font.bold: true
+                                        }
+
+                                        Text {
+                                            text: root.weatherData.todayHigh
+                                                ? root.weatherData.todayHigh + " / "
+                                                    + root.weatherData.todayLow + " F"
+                                                : "--"
+                                            color: root.cyan
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+
+                                        Text {
+                                            text: "Tomorrow"
+                                            color: root.foreground
+                                            font.bold: true
+                                        }
+
+                                        Text {
+                                            text: root.weatherData.tomorrowHigh
+                                                ? root.weatherData.tomorrowHigh + " / "
+                                                    + root.weatherData.tomorrowLow + " F"
+                                                : "--"
+                                            color: root.cyan
+                                        }
+                                    }
+                                }
+
+                                Item {
+                                    Layout.fillHeight: true
+                                }
+
+                                Text {
+                                    Layout.alignment: Qt.AlignRight
+                                    text: root.weatherUpdated === ""
+                                        ? ""
+                                        : "Updated " + root.weatherUpdated
+                                    color: root.muted
+                                    font.pixelSize: 10
+                                }
+                            }
+                        }
+                    }
+        }
+    }
+
+    Process {
+        id: networkStatus
+        command: [
+            "bash",
+            "-lc",
+            "nmcli -t -f TYPE,STATE,CONNECTION device status | "
+                + "awk -F: '$2 == \"connected\" && $1 != \"loopback\" "
+                + "{ print toupper($1) \" \" $3; exit }'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: root.networkText = text.trim() || "NET offline"
+        }
+    }
+
+    Process {
+        id: wifiScan
+        command: [
+            "bash",
+            "-lc",
+            "printf 'RADIO\\t%s\\n' \"$(nmcli radio wifi)\"; "
+                + "nmcli -t --escape yes -f IN-USE,SSID,SIGNAL,SECURITY "
+                + "device wifi list --rescan auto"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const rows = text.trim().split("\n")
+                const networks = []
+                const seen = ({})
+                root.wifiSignal = 0
+
+                if (rows.length > 0) {
+                    const radio = rows[0].split("\t")
+                    root.wifiEnabled = radio.length > 1 && radio[1] === "enabled"
+                }
+
+                for (let i = 1; i < rows.length; ++i) {
+                    const fields = root.splitNmcliRow(rows[i])
+                    if (fields.length < 4 || fields[1] === "")
+                        continue
+
+                    const network = {
+                        active: fields[0] === "*",
+                        ssid: fields[1],
+                        signal: fields[2],
+                        security: fields[3] === "" ? "--" : fields[3]
+                    }
+                    if (network.active)
+                        root.wifiSignal = parseInt(network.signal)
+                    const existingIndex = seen[network.ssid]
+
+                    if (existingIndex === undefined) {
+                        seen[network.ssid] = networks.length
+                        networks.push(network)
+                    } else if (network.active
+                               || parseInt(network.signal)
+                                   > parseInt(networks[existingIndex].signal)) {
+                        networks[existingIndex] = network
+                    }
+                }
+
+                root.wifiNetworks = networks
+            }
+        }
+    }
+
+    Process {
+        id: wifiConnect
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const message = text.trim()
+                if (message !== "")
+                    root.wifiMessage = message.split("\n")[0]
+            }
+        }
+        onExited: {
+            if (root.wifiMessage.indexOf("Connecting to ") === 0)
+                root.wifiMessage = "Connection request completed"
+            networkStatus.running = true
+            wifiScan.running = true
+        }
+    }
+
+    Process {
+        id: wifiRadio
+        onExited: {
+            root.wifiMessage = ""
+            networkStatus.running = true
+            wifiScan.running = true
+        }
+    }
+
+    Process {
+        id: wifiManager
+        command: ["kitty", "-e", "nmtui"]
+    }
+
+    Process {
+        id: bluetoothStatus
+        command: [
+            "bash",
+            "-lc",
+            "powered=$(bluetoothctl show | awk '/Powered:/ { print $2; exit }'); "
+                + "printf 'POWER\\t%s\\n' \"$powered\"; "
+                + "bluetoothctl devices Paired | while read -r _ mac name; do "
+                + "connected=$(bluetoothctl info \"$mac\" | "
+                + "awk '/Connected:/ { print $2; exit }'); "
+                + "printf '%s\\t%s\\t%s\\n' \"$mac\" \"$connected\" \"$name\"; done"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const rows = text.trim().split("\n")
+                const devices = []
+
+                if (rows.length > 0) {
+                    const power = rows[0].split("\t")
+                    root.bluetoothPowered = power.length > 1 && power[1] === "yes"
+                }
+
+                for (let i = 1; i < rows.length; ++i) {
+                    const fields = rows[i].split("\t")
+                    if (fields.length < 3)
+                        continue
+                    devices.push({
+                        mac: fields[0],
+                        connected: fields[1] === "yes",
+                        name: fields.slice(2).join("\t")
+                    })
+                }
+
+                root.bluetoothDevices = devices
+            }
+        }
+    }
+
+    Process {
+        id: bluetoothPower
+        onExited: {
+            root.bluetoothMessage = ""
+            bluetoothStatus.running = true
+        }
+    }
+
+    Process {
+        id: bluetoothConnect
+        stderr: StdioCollector {
+            onStreamFinished: {
+                const message = text.trim()
+                if (message !== "")
+                    root.bluetoothMessage = message.split("\n")[0]
+            }
+        }
+        onExited: {
+            if (root.bluetoothMessage.indexOf("ing ") > 0)
+                root.bluetoothMessage = "Bluetooth request completed"
+            bluetoothStatus.running = true
+        }
+    }
+
+    Process {
+        id: bluetoothScan
+        command: ["bluetoothctl", "--timeout", "5", "scan", "on"]
+        onStarted: root.bluetoothMessage = "Scanning for devices..."
+        onExited: {
+            root.bluetoothMessage = "Scan completed; use Manage to pair a new device"
+            bluetoothStatus.running = true
+        }
+    }
+
+    Process {
+        id: bluetoothManager
+        command: ["kitty", "-e", "bluetoothctl"]
+    }
+
+    Process {
+        id: weatherStatus
+        command: [
+            "bash",
+            "-lc",
+            "curl -fsSL --max-time 15 'https://wttr.in/__WEATHER_QUERY__?format=j1' | "
+                + "jq -r '[.current_condition[0].temp_F, "
+                + ".current_condition[0].weatherDesc[0].value, "
+                + ".current_condition[0].FeelsLikeF, "
+                + ".current_condition[0].humidity, "
+                + ".current_condition[0].windspeedMiles, "
+                + ".weather[0].maxtempF, .weather[0].mintempF, "
+                + ".weather[1].maxtempF, .weather[1].mintempF] | @tsv'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const fields = text.trim().split("\t")
+                if (fields.length < 9) {
+                    root.weatherText = "WX --"
+                    return
+                }
+
+                root.weatherData = {
+                    temperature: fields[0],
+                    description: fields[1],
+                    feelsLike: fields[2],
+                    humidity: fields[3],
+                    wind: fields[4],
+                    todayHigh: fields[5],
+                    todayLow: fields[6],
+                    tomorrowHigh: fields[7],
+                    tomorrowLow: fields[8]
+                }
+                root.weatherText = fields[0] + "°"
+                root.weatherUpdated = Qt.formatDateTime(clock.date, "HH:mm")
+            }
+        }
+    }
+
+    Process {
+        id: volumeStatus
+        command: [
+            "bash",
+            "-lc",
+            "wpctl get-volume @DEFAULT_AUDIO_SINK@ | "
+                + "awk '{ printf \"VOL %d%%\", $2 * 100; "
+                + "if ($0 ~ /MUTED/) printf \" muted\"; print \"\" }'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.volumeText = text.trim() || "VOL --"
+                root.volumePercent = parseInt(
+                    root.volumeText.replace(/[^0-9]/g, "")
+                ) || 0
+                root.volumeMuted = root.volumeText.indexOf("muted") >= 0
+            }
+        }
+    }
+
+    Process {
+        id: batteryStatus
+        command: [
+            "bash",
+            "-lc",
+            "device=$(upower -e | grep -m1 battery) || exit 0; "
+                + "upower -i \"$device\" | "
+                + "awk '/state:/ { state=$2 } /percentage:/ { pct=$2 } "
+                + "END { if (pct != \"\") printf \"BAT %s%s\\n\", pct, "
+                + "(state == \"charging\" ? \"+\" : \"\") }'"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.batteryText = text.trim()
+                root.batteryPercent = parseInt(
+                    root.batteryText.replace(/[^0-9]/g, "")
+                ) || 0
+                root.batteryCharging = root.batteryText.endsWith("+")
+            }
+        }
+    }
+
+    Process {
+        id: mediaStatus
+        command: [
+            "bash",
+            "-lc",
+            "playerctl metadata --format "
+                + "'{{status}}|{{artist}}|{{title}}' 2>/dev/null | head -n1"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const value = text.trim()
+                if (value === "") {
+                    root.mediaText = ""
+                    return
+                }
+
+                const parts = value.split("|")
+                const marker = parts[0] === "Playing" ? "> " : "|| "
+                const artist = parts[1] || ""
+                const title = parts[2] || ""
+                root.mediaText = marker + (artist !== "" ? artist + " - " : "") + title
+            }
+        }
+    }
+
+    Process {
+        id: volumeToggle
+        command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]
+        onExited: volumeStatus.running = true
+    }
+
+    Process {
+        id: volumeAdjust
+        onExited: volumeStatus.running = true
+    }
+
+    Process {
+        id: mediaToggle
+        command: ["playerctl", "play-pause"]
+        onExited: mediaStatus.running = true
+    }
+
+    Timer {
+        interval: 3000
+        running: true
+        repeat: true
+
+        onTriggered: {
+            if (!networkStatus.running)
+                networkStatus.running = true
+            if (!volumeStatus.running)
+                volumeStatus.running = true
+            if (!batteryStatus.running)
+                batteryStatus.running = true
+            if (!mediaStatus.running)
+                mediaStatus.running = true
+        }
+    }
+
+    Timer {
+        interval: 10000
+        running: true
+        repeat: true
+
+        onTriggered: {
+            if (!bluetoothStatus.running)
+                bluetoothStatus.running = true
+        }
+    }
+
+    Timer {
+        interval: 900000
+        running: true
+        repeat: true
+
+        onTriggered: {
+            if (!weatherStatus.running)
+                weatherStatus.running = true
+        }
+    }
+
+    Component.onCompleted: {
+        networkStatus.running = true
+        wifiScan.running = true
+        bluetoothStatus.running = true
+        weatherStatus.running = true
+        volumeStatus.running = true
+        batteryStatus.running = true
+        mediaStatus.running = true
+    }
+}
