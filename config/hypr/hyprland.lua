@@ -456,6 +456,13 @@ hl.window_rule({
     float = true,
 })
 
+hl.window_rule({
+    name  = "float-okular",
+    match = { class = "^org[.]kde[.]okular$" },
+    float = true,
+    size  = "1100 700",
+})
+
 local exec_onces = {
     "/usr/libexec/pam_kwallet_init",
     "hypr-network-audio-safe --watch 15",
