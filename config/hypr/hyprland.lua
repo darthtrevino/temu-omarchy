@@ -308,6 +308,7 @@ bind(mainMod .. " + CTRL + T", "Activity", hl.dsp.exec_cmd(terminal .. " --class
 bind(mainMod .. " + W", "Close window", hl.dsp.window.close())
 bind(mainMod .. " + Q", "Close window", hl.dsp.window.close())
 bind(mainMod .. " + T", "Toggle floating", hl.dsp.window.float({ action = "toggle" }))
+bind(mainMod .. " + L", "Toggle scrolling layout", hl.dsp.exec_cmd("hypr-workspace-layout-toggle"))
 bind(mainMod .. " + J", "Toggle split", hl.dsp.layout("togglesplit"))
 bind(mainMod .. " + P", "Pseudo window", hl.dsp.window.pseudo())
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen({ mode = "fullscreen" }))

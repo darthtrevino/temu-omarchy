@@ -88,6 +88,7 @@ back to it.
 | `Super+\`` | Toggle dropdown workspace |
 | `Super+Shift+\`` | Move focused window to dropdown |
 | `Super+Ctrl+T` | btop activity monitor |
+| `Super+L` | Toggle dwindle/scrolling layout |
 | `Super+Shift+Space` | Toggle top bar |
 | `Print` | Screenshot focused monitor |
 | `Shift+Print` | Screenshot region |

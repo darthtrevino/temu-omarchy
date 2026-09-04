@@ -13,6 +13,7 @@ SUPER + SHIFT + ALT + M          CLIamp
 SUPER + CTRL + T                 Activity monitor
 SUPER + W / SUPER + Q            Close window
 SUPER + T                        Toggle floating
+SUPER + L                        Toggle scrolling layout
 SUPER + J                        Toggle split
 SUPER + P                        Toggle pseudo tiling
 SUPER + F                        Fullscreen
