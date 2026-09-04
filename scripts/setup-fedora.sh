@@ -81,6 +81,7 @@ packages=(
     pam-kwallet
     plasma-breeze
     playerctl
+    pulseaudio-utils
     python3
     quickshell
     rofi
@@ -233,6 +234,7 @@ backup_target "$HOME/.config/hypr/hyprland.conf"
 link_config "$root/config/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
 link_config "$root/config/hypr/hyprlock.conf" "$HOME/.config/hypr/hyprlock.conf"
 link_config "$root/config/hypr/hypridle.conf" "$HOME/.config/hypr/hypridle.conf"
+link_config "$root/config/mako/config" "$HOME/.config/mako/config"
 copy_config "$root/config/btop/btop.conf" "$HOME/.config/btop/btop.conf"
 link_config "$root/config/btop/themes/current.theme" "$HOME/.config/btop/themes/current.theme"
 link_config "$root/config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"

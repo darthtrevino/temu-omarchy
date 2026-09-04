@@ -87,8 +87,17 @@ back to it.
 | `Super+Shift+Enter` | Zen Browser |
 | `Super+\`` | Toggle dropdown workspace |
 | `Super+Shift+\`` | Move focused window to dropdown |
+| `Super+Ctrl+L` | Lock immediately |
 | `Super+Ctrl+T` | btop activity monitor |
 | `Super+L` | Toggle dwindle/scrolling layout |
+| `Super+O` | Pop and pin the active window |
+| `Super+Ctrl+F` | Toggle tiled fullscreen |
+| `Super+,` | Dismiss the latest notification |
+| `Super+Shift+,` | Dismiss all notifications |
+| `Super+Alt+,` | Invoke the latest notification action |
+| `Super+Ctrl+Z` | Increase compositor zoom |
+| `Super+Ctrl+Alt+Z` | Reset compositor zoom |
+| `Shift+Volume Mute` | Select an audio output |
 | `Super+Shift+Space` | Toggle top bar |
 | `Print` | Screenshot focused monitor |
 | `Shift+Print` | Screenshot region |

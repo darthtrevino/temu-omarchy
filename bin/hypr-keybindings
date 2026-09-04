@@ -5,6 +5,7 @@ SUPER + SPACE                    Applications
 SUPER + K                        Keybinding help
 SUPER + ESCAPE                   System menu
 SUPER + M                        Log out
+SUPER + CTRL + L                 Lock system
 SUPER + RETURN                   Terminal
 SUPER + SHIFT + RETURN           Browser
 SUPER + SHIFT + F                File manager
@@ -17,7 +18,9 @@ SUPER + L                        Toggle scrolling layout
 SUPER + J                        Toggle split
 SUPER + P                        Toggle pseudo tiling
 SUPER + F                        Fullscreen
+SUPER + CTRL + F                 Tiled fullscreen
 SUPER + ALT + F                  Maximize
+SUPER + O                        Pop window out / restore
 SUPER + ARROWS                   Focus window
 SUPER + SHIFT + ARROWS           Swap window
 ALT + TAB                        Next window
@@ -40,9 +43,15 @@ SUPER + ALT + SHIFT + TAB        Previous grouped window
 SUPER + MINUS / EQUAL            Resize horizontally
 SUPER + SHIFT + MINUS / EQUAL    Resize vertically
 SUPER + SHIFT + SPACE            Toggle top bar
+SUPER + COMMA                    Dismiss notification
+SUPER + SHIFT + COMMA            Dismiss all notifications
+SUPER + ALT + COMMA              Invoke notification action
 PRINT                            Screenshot screen
 SHIFT + PRINT                    Screenshot region
 SUPER + PRINT                    Screenshot active window
+SUPER + CTRL + Z                 Zoom in
+SUPER + CTRL + ALT + Z           Reset zoom
+SHIFT + VOLUME MUTE              Select audio output
 ALT + VOLUME UP / DOWN           Adjust volume by 1%
 ALT + BRIGHTNESS UP / DOWN       Adjust brightness by 1%
 SHIFT + BRIGHTNESS UP / DOWN     Maximum / minimum brightness

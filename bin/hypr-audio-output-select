@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if ! sinks=$(timeout 3 pactl -f json list sinks 2>/dev/null); then
+    notify-send -u critical "Audio output selection failed" \
+        "PipeWire did not return the available outputs."
+    exit 1
+fi
+
+current_sink=$(timeout 2 pactl get-default-sink 2>/dev/null || true)
+mapfile -t choices < <(
+    jq -r --arg current "$current_sink" '
+        .[]
+        | select(
+            (.ports | length == 0)
+            or any(.ports[]?; .availability != "not available")
+        )
+        | (.description // .properties."device.description" // .name) as $description
+        | (if $description == "(null)" then .name else $description end) as $label
+        | [
+            (if .name == $current then "* " else "  " end) + $label,
+            .name
+        ]
+        | @tsv
+    ' <<<"$sinks"
+)
+
+if ((${#choices[@]} == 0)); then
+    notify-send -u critical "Audio output selection failed" \
+        "No available audio outputs were found."
+    exit 1
+fi
+
+selection=$(
+    printf '%s\n' "${choices[@]}" |
+        rofi -dmenu -i -p "Audio output" -display-columns 1
+) || exit 0
+
+sink_name=${selection#*$'\t'}
+sink_label=${selection%%$'\t'*}
+sink_label=${sink_label#??}
+
+if [[ -z "$sink_name" ]]; then
+    notify-send -u critical "Audio output selection failed" \
+        "The selected output did not have a PipeWire sink name."
+    exit 1
+fi
+
+if [[ "$sink_name" != "$current_sink" ]]; then
+    timeout 3 pactl set-default-sink "$sink_name"
+
+    while IFS= read -r input; do
+        [[ -n "$input" ]] || continue
+        timeout 3 pactl move-sink-input "$input" "$sink_name"
+    done < <(timeout 3 pactl -f json list sink-inputs 2>/dev/null | jq -r '.[].index')
+fi
+
+notify-send -u low "Audio output" "$sink_label"

@@ -224,7 +224,7 @@ hl.config({
 
 hl.config({
     misc = {
-        force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
+        force_default_wallpaper = 2,     -- Use /usr/share/hypr/wall2.png
         disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
     },
 })
@@ -297,6 +297,7 @@ bind(mainMod .. " + R", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + K", "Keybinding help", hl.dsp.exec_cmd("hypr-keybindings"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("hypr-system-menu"))
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("if uwsm check is-active >/dev/null 2>&1; then uwsm stop; else hyprctl dispatch 'hl.dsp.exit()'; fi"))
+bind(mainMod .. " + CTRL + L", "Lock system", hl.dsp.exec_cmd("pgrep -x hyprlock >/dev/null || hyprlock"))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + SHIFT + RETURN", "Browser", hl.dsp.exec_cmd(browser))
 bind(mainMod .. " + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
@@ -312,7 +313,9 @@ bind(mainMod .. " + L", "Toggle scrolling layout", hl.dsp.exec_cmd("hypr-workspa
 bind(mainMod .. " + J", "Toggle split", hl.dsp.layout("togglesplit"))
 bind(mainMod .. " + P", "Pseudo window", hl.dsp.window.pseudo())
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
+bind(mainMod .. " + CTRL + F", "Tiled fullscreen", hl.dsp.exec_cmd("hypr-window-tiled-fullscreen-toggle"))
 bind(mainMod .. " + ALT + F", "Maximize", hl.dsp.window.fullscreen({ mode = "maximized" }))
+bind(mainMod .. " + O", "Pop window out", hl.dsp.exec_cmd("hypr-window-pop"))
 
 for _, direction in ipairs({ "left", "right", "up", "down" }) do
     bind(mainMod .. " + " .. direction, "Focus " .. direction, hl.dsp.focus({ direction = direction }))
@@ -357,6 +360,9 @@ bind(mainMod .. " + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = t
 bind(mainMod .. " + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
 
 bind(mainMod .. " + SHIFT + SPACE", "Toggle top bar", hl.dsp.exec_cmd("qs ipc call bar toggle"))
+bind(mainMod .. " + comma", "Dismiss notification", hl.dsp.exec_cmd("makoctl dismiss"))
+bind(mainMod .. " + SHIFT + comma", "Dismiss all notifications", hl.dsp.exec_cmd("makoctl dismiss --all"))
+bind(mainMod .. " + ALT + comma", "Invoke notification action", hl.dsp.exec_cmd("makoctl invoke"))
 bind("PRINT", "Screenshot screen", hl.dsp.exec_cmd("hypr-screenshot screen"))
 bind("SHIFT + PRINT", "Screenshot region", hl.dsp.exec_cmd("hypr-screenshot region"))
 bind(mainMod .. " + PRINT", "Screenshot window", hl.dsp.exec_cmd("hypr-screenshot window"))
@@ -367,6 +373,7 @@ bind("XF86AudioLowerVolume", "Volume down", hl.dsp.exec_cmd("wpctl set-volume @D
 bind("ALT + XF86AudioRaiseVolume", "Volume up precise", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 1%+"), { locked = true, repeating = true })
 bind("ALT + XF86AudioLowerVolume", "Volume down precise", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 1%-"), { locked = true, repeating = true })
 bind("XF86AudioMute", "Mute audio", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
+bind("SHIFT + XF86AudioMute", "Select audio output", hl.dsp.exec_cmd("hypr-audio-output-select"), { locked = true })
 bind("XF86AudioMicMute", "Mute microphone", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
 
 bind("XF86MonBrightnessUp", "Brightness up", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
@@ -382,6 +389,15 @@ bind("XF86AudioPause", "Play or pause", hl.dsp.exec_cmd("playerctl play-pause"),
 bind("XF86AudioPlay", "Play or pause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 bind("XF86AudioPrev", "Previous track", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 bind("ALT + SHIFT + XF86AudioPlay", "Previous track", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+
+bind(mainMod .. " + CTRL + Z", "Zoom in", function()
+    local zoom = hl.get_config("cursor.zoom_factor") or 1
+    hl.config({ cursor = { zoom_factor = zoom + 1 } })
+end)
+
+bind(mainMod .. " + CTRL + ALT + Z", "Reset zoom", function()
+    hl.config({ cursor = { zoom_factor = 1 } })
+end)
 
 
 --------------------------------
