@@ -5,6 +5,8 @@ SUPER + SPACE                    Applications
 SUPER + K                        Keybinding help
 SUPER + ESCAPE                   System menu
 SUPER + M                        Log out
+SUPER + CTRL + X                 Toggle dictation
+F9                               Hold for dictation
 SUPER + CTRL + L                 Lock system
 SUPER + RETURN                   Terminal
 SUPER + SHIFT + RETURN           Browser

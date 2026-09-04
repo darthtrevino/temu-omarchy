@@ -297,6 +297,9 @@ bind(mainMod .. " + R", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + K", "Keybinding help", hl.dsp.exec_cmd("hypr-keybindings"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("hypr-system-menu"))
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"))
+bind(mainMod .. " + CTRL + X", "Toggle dictation", hl.dsp.exec_cmd("voxtype record toggle"))
+bind("F9", "Start dictation", hl.dsp.exec_cmd("voxtype record start"))
+bind("F9", "Stop dictation", hl.dsp.exec_cmd("voxtype record stop"), { release = true })
 bind(mainMod .. " + CTRL + L", "Lock system", hl.dsp.exec_cmd("pgrep -x hyprlock >/dev/null || hyprlock"))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + SHIFT + RETURN", "Browser", hl.dsp.exec_cmd(browser))
@@ -467,6 +470,7 @@ local exec_onces = {
     "/usr/libexec/pam_kwallet_init",
     "hypr-network-audio-safe --watch 15",
     "hyprpaper",
+    "voxtype daemon",
     "qs --no-duplicate",
     "mako",
 }

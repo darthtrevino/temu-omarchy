@@ -15,6 +15,7 @@ ShellRoot {
     property int volumePercent: 0
     property bool volumeMuted: false
     property int pendingVolumePercent: -1
+    property string dictationState: "idle"
     property string batteryText: "BAT --"
     property string mediaText: ""
     property var wifiNetworks: []
@@ -425,6 +426,38 @@ ShellRoot {
                                 if (weatherPopup.visible && !weatherStatus.running)
                                     weatherStatus.running = true
                             }
+                        }
+                    }
+
+                    Rectangle {
+                        id: dictationButton
+
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 26
+                        radius: 6
+                        color: dictationMouse.containsMouse
+                            ? root.surface
+                            : "transparent"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf130"
+                            color: root.dictationState === "recording"
+                                ? "#ff6677"
+                                : root.dictationState === "transcribing"
+                                    ? root.cyan
+                                    : root.muted
+                            font.family: "Font Awesome 6 Free"
+                            font.styleName: "Solid"
+                            font.pixelSize: 15
+                        }
+
+                        MouseArea {
+                            id: dictationMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: dictationToggle.running = true
                         }
                     }
 
@@ -1939,6 +1972,36 @@ ShellRoot {
     Process {
         id: orthocalOpen
         command: ["xdg-open", "https://orthocal.info/"]
+    }
+
+    Process {
+        id: dictationStatus
+        command: ["voxtype", "status", "--format", "json"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const status = JSON.parse(text)
+                    root.dictationState = status.alt || status.class || "idle"
+                } catch (error) {
+                    root.dictationState = "idle"
+                }
+            }
+        }
+    }
+
+    Timer {
+        interval: 500
+        running: true
+        repeat: true
+        onTriggered: {
+            if (!dictationStatus.running)
+                dictationStatus.running = true
+        }
+    }
+
+    Process {
+        id: dictationToggle
+        command: ["voxtype", "record", "toggle"]
     }
 
     Process {

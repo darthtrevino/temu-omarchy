@@ -7,6 +7,7 @@ Omarchy used on this machine.
 
 - Hyprland Lua configuration and Omarchy-style keybindings
 - Random-shuffle wallpaper rotation from `~/.wallpapers` every 15 minutes
+- Local Voxtype dictation with toggle and push-to-talk controls
 - Top-half dropdown workspace with terminal and cliamp
 - Automatic PipeWire recovery when the Asahi speaker sink is unavailable
 - Quickshell bar with workspaces, tray, calendar, Wi-Fi, Bluetooth, weather,
@@ -37,8 +38,8 @@ The setup script:
 1. Installs Fedora packages through `sudo dnf`.
 2. Adds Flathub for the current user, installs Zen Browser, and makes it the
    default web browser.
-3. Downloads JetBrainsMono Nerd Font v3.5.1 and cliamp v2.0.1 from their
-   official releases and verifies pinned SHA-256 checksums.
+3. Downloads JetBrainsMono Nerd Font v3.5.1, cliamp v2.0.1, and Voxtype
+   v1.0.1 from their official releases and verifies pinned SHA-256 checksums.
 4. Backs up replaced or mutated configuration files under
    `~/.local/state/temu-omarchy/backups/<timestamp>`.
 5. Symlinks static configurations and helper scripts from this repository.
@@ -91,6 +92,8 @@ back to it.
 | `Super+\`` | Toggle dropdown workspace |
 | `Super+Shift+\`` | Move focused window to dropdown |
 | `Super+Ctrl+L` | Lock immediately |
+| `Super+Ctrl+X` | Toggle voice dictation |
+| `F9` | Hold for voice dictation |
 | `Super+Ctrl+T` | btop activity monitor |
 | `Super+L` | Toggle dwindle/scrolling layout |
 | `Super+O` | Pop and pin the active window |

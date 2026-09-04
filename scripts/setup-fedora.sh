@@ -80,6 +80,7 @@ packages=(
     NetworkManager-tui
     NetworkManager-wifi
     pam-kwallet
+    pipewire-alsa
     plasma-breeze
     playerctl
     pulseaudio-utils
@@ -92,6 +93,7 @@ packages=(
     vim-enhanced
     wireplumber
     wl-clipboard
+    wtype
     xdg-utils
 )
 
@@ -174,6 +176,7 @@ do
 done
 "$root/scripts/install-nerd-font.sh"
 "$root/scripts/install-cliamp.sh"
+"$root/scripts/install-voxtype.sh"
 
 hyprland_version=$(rpm -q --qf '%{VERSION}' hyprland)
 oldest_version=$(
@@ -242,6 +245,12 @@ link_config "$root/config/btop/themes/current.theme" "$HOME/.config/btop/themes/
 link_config "$root/config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 link_config "$root/config/rofi/config.rasi" "$HOME/.config/rofi/config.rasi"
 link_config "$root/config/fontconfig/fonts.conf" "$HOME/.config/fontconfig/fonts.conf"
+link_config "$root/config/voxtype/config.toml" "$HOME/.config/voxtype/config.toml"
+
+"$HOME/.local/bin/voxtype" setup \
+    --download \
+    --model base.en \
+    --no-post-install
 
 for helper in "$root"/bin/*; do
     chmod +x "$helper"
@@ -330,6 +339,9 @@ if hyprctl version >/dev/null 2>&1; then
     hyprctl reload >/dev/null
     pgrep -x hyprpaper >/dev/null \
         || hyprctl dispatch 'hl.dsp.exec_cmd("hyprpaper")' >/dev/null
+    "$HOME/.local/bin/voxtype" status --format json \
+        | jq -e '.class != "stopped"' >/dev/null \
+        || hyprctl dispatch 'hl.dsp.exec_cmd("voxtype daemon")' >/dev/null
     qs kill >/dev/null 2>&1 || true
     hyprctl dispatch 'hl.dsp.exec_cmd("qs --no-duplicate")' >/dev/null || true
 fi
