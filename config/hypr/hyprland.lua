@@ -295,6 +295,7 @@ end
 bind(mainMod .. " + SPACE", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + R", "Applications", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + K", "Keybinding help", hl.dsp.exec_cmd("hypr-keybindings"))
+bind(mainMod .. " + CTRL + K", "Herdr keybindings", hl.dsp.exec_cmd("hypr-herdr-keybindings"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("hypr-system-menu"))
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"))
 bind(mainMod .. " + CTRL + X", "Toggle dictation", hl.dsp.exec_cmd("voxtype record toggle"))

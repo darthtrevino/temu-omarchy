@@ -3,6 +3,7 @@
 cat <<'EOF' | rofi -dmenu -i -matching fuzzy -p "Keybindings" -no-custom
 SUPER + SPACE                    Applications
 SUPER + K                        Keybinding help
+SUPER + CTRL + K                 Herdr keybindings
 SUPER + ESCAPE                   System menu
 SUPER + M                        Log out
 SUPER + CTRL + X                 Toggle dictation

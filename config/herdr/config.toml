@@ -23,12 +23,7 @@ focus_pane_down = "ctrl+alt+down"
 focus_pane_up = "ctrl+alt+up"
 focus_pane_right = "ctrl+alt+right"
 
-resize_mode = [
-    "prefix+ctrl+left",
-    "prefix+ctrl+down",
-    "prefix+ctrl+up",
-    "prefix+ctrl+right",
-]
+resize_mode = ["prefix+ctrl+left", "prefix+ctrl+down", "prefix+ctrl+up", "prefix+ctrl+right"]
 
 resize_pane_left = "ctrl+alt+shift+left"
 resize_pane_down = "ctrl+alt+shift+down"

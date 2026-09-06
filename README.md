@@ -124,4 +124,5 @@ back to it.
 | `Shift+Print` | Screenshot region |
 | `Super+Print` | Screenshot active window |
 | `Super+K` | Keybinding reference |
+| `Super+Ctrl+K` | Herdr keybinding reference |
 | `Super+Escape` | System menu |
