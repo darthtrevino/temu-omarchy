@@ -12,8 +12,9 @@ replicating Omarchy's Arch-specific distribution tooling.
 ## Current baseline
 
 - [x] Hyprland tiling, scrolling layouts, groups, scratchpad, and navigation
-- [x] Quickshell bar with workspaces, tray, calendar, weather, connectivity,
-      audio, battery, and media controls
+- [x] Omarchy-compatible Quickshell plugin host with workspaces, tray,
+      calendar, weather, connectivity, audio, battery, media controls, and
+      community plugin loading
 - [x] Application, system, audio-output, and keybinding menus
 - [x] Locking, idle policy, screenshots, and notification actions
 - [x] Random-shuffle wallpaper rotation
@@ -120,4 +121,5 @@ this project's goals change:
 - Plymouth and SDDM theme management
 - A bundled gaming or web-application catalogue
 - Windows virtual-machine provisioning
-- A complete port of Omarchy's shell plugin marketplace
+- Omarchy's Arch-specific package-management and marketplace presentation
+  layers; compatible plugins can still be installed from reviewed source

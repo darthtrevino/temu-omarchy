@@ -9,7 +9,7 @@ usage() {
     cat <<'EOF'
 Usage: ./scripts/setup-fedora.sh --weather-location LOCATION
 
-LOCATION is kept only in the generated local Quickshell config. It is never
+LOCATION is kept only in the generated local Omarchy shell state. It is never
 written back to this repository.
 EOF
 }
@@ -47,13 +47,22 @@ if [[ -d "$root/.git" ]]; then
     ln -sfn "$root/hooks/pre-commit" "$root/.git/hooks/pre-commit"
 fi
 
-if [[ -z "$(dnf repoquery --qf '%{name}' quickshell 2>/dev/null | head -n 1)" ]]; then
+if [[ -z "$(dnf repoquery --qf '%{name}' hyprland 2>/dev/null | head -n 1)" ]]; then
     cat >&2 <<'EOF'
-The quickshell package is unavailable from enabled repositories.
-Review and enable the Fedora COPR used for your Hyprland packages, then rerun
-this script. Repository enablement is intentionally not automated.
+The Hyprland packages are unavailable from enabled repositories.
+Review and enable the nett00n/hyprland Fedora COPR, then rerun this script:
+
+    sudo dnf copr enable nett00n/hyprland
+
+Repository enablement is intentionally not automated.
 EOF
     exit 1
+fi
+
+hyprland_copr_repo='copr:copr.fedorainfracloud.org:nett00n:hyprland'
+if dnf repolist --enabled | grep -qF "$hyprland_copr_repo"; then
+    sudo dnf config-manager setopt \
+        "$hyprland_copr_repo.excludepkgs=quickshell"
 fi
 
 packages=(
@@ -72,6 +81,10 @@ packages=(
     hyprlock
     hyprpaper
     hyprpolkitagent
+    inotify-tools
+    iproute
+    iputils
+    iw
     jq
     kf6-kconfig
     kitty
@@ -88,6 +101,7 @@ packages=(
     quickshell
     rofi
     slurp
+    tuned-ppd
     unicode-ucd
     unzip
     upower
@@ -99,6 +113,12 @@ packages=(
 )
 
 sudo dnf install -y "${packages[@]}"
+sudo systemctl enable --now bluetooth.service
+sudo dnf distro-sync -y \
+    --allow-vendor-change \
+    --repo=fedora \
+    --repo=updates \
+    quickshell
 flatpak remote-add \
     --user \
     --if-not-exists \
@@ -166,15 +186,6 @@ for preference in source_path.read_text().splitlines():
 
 target.write_text(existing)
 PY
-zen_desktop='app.zen_browser.zen.desktop'
-xdg-settings set default-web-browser "$zen_desktop"
-for mime_type in \
-    text/html \
-    x-scheme-handler/http \
-    x-scheme-handler/https
-do
-    xdg-mime default "$zen_desktop" "$mime_type"
-done
 "$root/scripts/install-nerd-font.sh"
 "$root/scripts/install-cliamp.sh"
 "$root/scripts/install-voxtype.sh"
@@ -247,6 +258,10 @@ link_config "$root/config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 link_config "$root/config/rofi/config.rasi" "$HOME/.config/rofi/config.rasi"
 link_config "$root/config/fontconfig/fonts.conf" "$HOME/.config/fontconfig/fonts.conf"
 link_config "$root/config/voxtype/config.toml" "$HOME/.config/voxtype/config.toml"
+link_config "$root/config/omarchy/shell.toml" "$HOME/.config/omarchy/shell.toml"
+link_config \
+    "$root/vendor/orthodox-daily" \
+    "$HOME/.config/omarchy/plugins/io.github.tyrichards.orthodox-daily"
 
 "$HOME/.local/bin/voxtype" setup \
     --download \
@@ -258,30 +273,28 @@ for helper in "$root"/bin/*; do
     link_config "$helper" "$HOME/.local/bin/$(basename "$helper")"
 done
 
-quickshell_target="$HOME/.config/quickshell/shell.qml"
-mkdir -p "$(dirname "$quickshell_target")"
-quickshell_temporary=$(mktemp "$quickshell_target.tmp.XXXXXX")
-if ! python3 - "$root/config/quickshell/shell.qml.in" \
-    "$quickshell_temporary" "$weather_location" <<'PY'
+chmod +x "$root"/vendor/omarchy/bin/*
+
+backup_target "$HOME/.config/quickshell/shell.qml"
+weather_target="$HOME/.local/state/omarchy/settings/weather.json"
+mkdir -p "$(dirname "$weather_target")"
+weather_temporary=$(mktemp "$weather_target.tmp.XXXXXX")
+if ! python3 - "$weather_temporary" "$weather_location" <<'PY'
 import json
 import pathlib
 import sys
-import urllib.parse
 
-source, target, location = sys.argv[1:]
-text = pathlib.Path(source).read_text()
-label = json.dumps(location)[1:-1]
-query = urllib.parse.quote(location, safe="")
-text = text.replace("__WEATHER_LABEL__", label)
-text = text.replace("__WEATHER_QUERY__", query)
-pathlib.Path(target).write_text(text)
+target, location = sys.argv[1:]
+pathlib.Path(target).write_text(
+    json.dumps({"name": location}, indent=2) + "\n"
+)
 PY
 then
-    rm -f "$quickshell_temporary"
+    rm -f "$weather_temporary"
     exit 1
 fi
-backup_target "$quickshell_target"
-mv "$quickshell_temporary" "$quickshell_target"
+backup_target "$weather_target"
+mv "$weather_temporary" "$weather_target"
 
 font_value='JetBrainsMono Nerd Font,10,-1,5,50,0,0,0,0,0'
 small_font_value='JetBrainsMono Nerd Font,8,-1,5,50,0,0,0,0,0'
@@ -343,8 +356,10 @@ if hyprctl version >/dev/null 2>&1; then
     "$HOME/.local/bin/voxtype" status --format json \
         | jq -e '.class != "stopped"' >/dev/null \
         || hyprctl dispatch 'hl.dsp.exec_cmd("voxtype daemon")' >/dev/null
-    qs kill >/dev/null 2>&1 || true
-    hyprctl dispatch 'hl.dsp.exec_cmd("qs --no-duplicate")' >/dev/null || true
+    qs kill -p "$root/vendor/omarchy/shell" --any-display \
+        >/dev/null 2>&1 || true
+    hyprctl dispatch \
+        'hl.dsp.exec_cmd("temu-omarchy-shell start")' >/dev/null || true
 fi
 
 printf 'Setup complete.\n'

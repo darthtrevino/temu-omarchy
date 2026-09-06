@@ -45,6 +45,9 @@ SUPER + ALT + SHIFT + TAB        Previous grouped window
 SUPER + MINUS / EQUAL            Resize horizontally
 SUPER + SHIFT + MINUS / EQUAL    Resize vertically
 SUPER + SHIFT + SPACE            Toggle top bar
+SUPER + CTRL + ALT + T           Toggle calendar
+SUPER + CTRL + ALT + D           Toggle Orthodox pane
+SUPER + CTRL + ALT + W           Toggle Wi-Fi menu
 SUPER + COMMA                    Dismiss notification
 SUPER + SHIFT + COMMA            Dismiss all notifications
 SUPER + ALT + COMMA              Invoke notification action

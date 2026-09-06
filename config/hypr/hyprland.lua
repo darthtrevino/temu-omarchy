@@ -38,7 +38,7 @@ hl.monitor({
 local terminal    = "kitty"
 local fileManager = "dolphin"
 local menu        = "rofi -show drun"
-local browser     = "flatpak run app.zen_browser.zen"
+local browser     = "gtk-launch \"$(xdg-settings get default-web-browser)\""
 
 
 -------------------
@@ -363,7 +363,10 @@ bind(mainMod .. " + mouse_up", "Previous workspace", hl.dsp.focus({ workspace = 
 bind(mainMod .. " + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
 bind(mainMod .. " + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
 
-bind(mainMod .. " + SHIFT + SPACE", "Toggle top bar", hl.dsp.exec_cmd("qs ipc call bar toggle"))
+bind(mainMod .. " + SHIFT + SPACE", "Toggle top bar", hl.dsp.exec_cmd("temu-omarchy-shell toggle-bar"))
+bind(mainMod .. " + CTRL + ALT + T", "Toggle calendar", hl.dsp.exec_cmd("temu-omarchy-shell ipc shell toggle omarchy.clock '{}'"))
+bind(mainMod .. " + CTRL + ALT + D", "Toggle Orthodox pane", hl.dsp.exec_cmd("temu-omarchy-shell ipc shell toggle io.github.tyrichards.orthodox-daily '{}'"))
+bind(mainMod .. " + CTRL + ALT + W", "Toggle Wi-Fi menu", hl.dsp.exec_cmd("temu-omarchy-shell ipc shell toggle omarchy.network '{}'"))
 bind(mainMod .. " + comma", "Dismiss notification", hl.dsp.exec_cmd("makoctl dismiss"))
 bind(mainMod .. " + SHIFT + comma", "Dismiss all notifications", hl.dsp.exec_cmd("makoctl dismiss --all"))
 bind(mainMod .. " + ALT + comma", "Invoke notification action", hl.dsp.exec_cmd("makoctl invoke"))
@@ -472,7 +475,7 @@ local exec_onces = {
     "hypr-network-audio-safe --watch 15",
     "hyprpaper",
     "voxtype daemon",
-    "qs --no-duplicate",
+    "temu-omarchy-shell start",
     "mako",
 }
 
