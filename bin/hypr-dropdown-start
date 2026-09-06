@@ -1,35 +1,3 @@
 #!/usr/bin/env bash
 
-cliamp_socket="$HOME/.config/cliamp/cliamp.sock"
-cliamp_pid_file="$HOME/.config/cliamp/cliamp.sock.pid"
-
-if [[ -f "$cliamp_pid_file" ]]; then
-    read -r cliamp_pid <"$cliamp_pid_file"
-    if [[ ! "$cliamp_pid" =~ ^[0-9]+$ ]] || ! kill -0 "$cliamp_pid" 2>/dev/null; then
-        rm -f "$cliamp_socket" "$cliamp_pid_file"
-    fi
-fi
-
-if hypr-asahi-audio-ensure --select; then
-    kitty \
-        --class cliamp \
-        --override font_size=8.0 \
-        -e cliamp --start-theme tokyo-night &
-else
-    notify-send \
-        --urgency=critical \
-        "CLIamp audio unavailable" \
-        "PipeWire did not restore the Asahi speaker sink."
-fi
-
-for _ in {1..20}; do
-    sleep 0.05
-    if hyprctl clients -j | jq -e \
-        '.[] | select(.class == "cliamp"
-                      and .workspace.name == "special:scratchpad")' \
-        >/dev/null; then
-        break
-    fi
-done
-
 exec kitty --class dropdown-terminal

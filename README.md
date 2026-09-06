@@ -11,7 +11,7 @@ non-goals.
 - Hyprland Lua configuration and Omarchy-style keybindings
 - Random-shuffle wallpaper rotation from `~/.wallpapers` every 15 minutes
 - Local Voxtype dictation with toggle and push-to-talk controls
-- Top-half dropdown workspace with terminal and cliamp
+- Top-half dropdown workspace with a terminal
 - Automatic PipeWire recovery when the Asahi speaker sink is unavailable
 - Omarchy-compatible Quickshell plugin host with workspaces, tray, calendar,
   Wi-Fi, Bluetooth, weather, Orthodox Daily, volume, battery, and media
