@@ -67,7 +67,7 @@ replicating Omarchy's Arch-specific distribution tooling.
 
 ### Display management
 
-- [ ] Add monitor scaling presets
+- [x] Add monitor scaling presets
 - [ ] Add coordinated text-size controls for the shell, terminal, GTK, and Qt
 - [ ] Add external-monitor brightness support through DDC/CI
 - [ ] Add internal-display and mirroring toggles

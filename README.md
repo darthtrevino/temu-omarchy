@@ -14,8 +14,8 @@ non-goals.
 - Top-half dropdown workspace with a terminal
 - Automatic PipeWire recovery when the Asahi speaker sink is unavailable
 - Omarchy-compatible Quickshell plugin host with workspaces, tray, calendar,
-  Wi-Fi, Bluetooth, weather, Orthodox Daily, volume, battery, and media
-  controls
+  Wi-Fi, Bluetooth, weather, Orthodox Daily, Proton Pass, display, volume,
+  battery, and media controls
 - Themed hyprlock and battery-aware hypridle policy
 - btop activity monitor and matching theme
 - Screenshot workflow using grim, slurp, and wl-copy
