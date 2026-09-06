@@ -258,6 +258,7 @@ link_config "$root/config/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 link_config "$root/config/rofi/config.rasi" "$HOME/.config/rofi/config.rasi"
 link_config "$root/config/fontconfig/fonts.conf" "$HOME/.config/fontconfig/fonts.conf"
 link_config "$root/config/voxtype/config.toml" "$HOME/.config/voxtype/config.toml"
+link_config "$root/config/herdr/config.toml" "$HOME/.config/herdr/config.toml"
 link_config "$root/config/omarchy/shell.toml" "$HOME/.config/omarchy/shell.toml"
 link_config \
     "$root/vendor/orthodox-daily" \
