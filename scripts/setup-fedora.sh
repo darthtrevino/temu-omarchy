@@ -188,6 +188,7 @@ target.write_text(existing)
 PY
 "$root/scripts/install-nerd-font.sh"
 "$root/scripts/install-cliamp.sh"
+"$root/scripts/install-proton-pass-cli.sh"
 "$root/scripts/install-voxtype.sh"
 
 hyprland_version=$(rpm -q --qf '%{VERSION}' hyprland)
@@ -263,6 +264,50 @@ link_config "$root/config/omarchy/shell.toml" "$HOME/.config/omarchy/shell.toml"
 link_config \
     "$root/vendor/orthodox-daily" \
     "$HOME/.config/omarchy/plugins/io.github.tyrichards.orthodox-daily"
+link_config \
+    "$root/vendor/protonpass" \
+    "$HOME/.config/omarchy/plugins/josh2c.protonpass"
+
+vscode_argv="$HOME/.vscode/argv.json"
+mkdir -p "$(dirname "$vscode_argv")"
+python3 - "$vscode_argv" <<'PY'
+import os
+import pathlib
+import re
+import sys
+import tempfile
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text() if path.exists() else "{}\n"
+setting = '"password-store": "gnome-libsecret"'
+pattern = re.compile(
+    r'(^\s*"password-store"\s*:\s*)"[^"]*"',
+    re.MULTILINE,
+)
+
+if pattern.search(text):
+    updated = pattern.sub(r'\1"gnome-libsecret"', text)
+else:
+    closing_brace = text.rfind("}")
+    if closing_brace < 0:
+        raise SystemExit(f"{path} is not a valid VS Code runtime arguments file.")
+
+    before = text[:closing_brace].rstrip()
+    separator = "\n" if before.endswith(("{", ",")) else ",\n"
+    updated = f"{before}{separator}\t{setting}\n{text[closing_brace:]}"
+
+if updated != text:
+    with tempfile.NamedTemporaryFile(
+        "w",
+        dir=path.parent,
+        prefix=f"{path.name}.",
+        delete=False,
+    ) as temporary:
+        temporary.write(updated)
+        temporary_path = temporary.name
+    os.chmod(temporary_path, path.stat().st_mode if path.exists() else 0o644)
+    os.replace(temporary_path, path)
+PY
 
 "$HOME/.local/bin/voxtype" setup \
     --download \
