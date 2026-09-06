@@ -16,3 +16,7 @@ Vendored paths:
 - shell/plugins/services/battery
 - shell/plugins/services/media
 - selected portable bin helpers
+
+Local Fedora adaptations:
+- The audio panel uses pactl-backed state instead of Quickshell's live
+  PipeWire object model, which segfaults in Fedora's Quickshell 0.2 build.
